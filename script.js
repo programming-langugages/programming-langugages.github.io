@@ -38,7 +38,7 @@ var tokenList = [
         print: "onlyToken"
     },
     {
-        name: "tk_cor_der",
+        name: "tk_tres_puntos",
         hardRegex: /^\.\.\.$/,
         softRegex: /^\.\.\.]/,
         print: "onlyToken"
