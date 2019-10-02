@@ -44,6 +44,18 @@ var tokenList = [
         print: "onlyToken"
     },
     {
+        name: "tk_corche_izq",
+        hardRegex: /^{$/,
+        softRegex: /^{/,
+        print: "onlyToken"
+    },
+    {
+        name: "tk_corche_der",
+        hardRegex: /^}$/,
+        softRegex: /^}/,
+        print: "onlyToken"
+    },
+    {
         name: "tk_distinto",
         hardRegex: /^!=$/,
         softRegex: /^!=/,
