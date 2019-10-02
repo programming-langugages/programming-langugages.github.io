@@ -38,12 +38,6 @@ var tokenList = [
         print: "onlyToken"
     },
     {
-        name: "tk_tres_puntos",
-        hardRegex: /^\.\.\.$/,
-        softRegex: /^\.\.\.]/,
-        print: "onlyToken"
-    },
-    {
         name: "tk_cor_izq",
         hardRegex: /^\[$/,
         softRegex: /^\[/,
@@ -163,7 +157,13 @@ var tokenList = [
         hardRegex: /^:=:$/,
         softRegex: /^:=:/,
         print: "onlyToken"
-    }
+    },
+    {
+        name: "tk_tres_puntos",
+        hardRegex: /^\.\.\.$/,
+        softRegex: /^\.\.\.]/,
+        print: "onlyToken"
+    },
 ]
 
 //Additional Regexs
