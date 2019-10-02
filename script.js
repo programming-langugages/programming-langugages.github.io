@@ -2,7 +2,7 @@
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|body|create|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|read|real|send|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|to|af|op|or|fa|fi|if)$/,
+        hardRegex: /^(global|body|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
         softRegex: /^(global|body|create|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|read|real|send|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|to|af|op|or|fa|fi|if)/,
         print: "onlyWord"
     }
