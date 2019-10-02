@@ -191,7 +191,7 @@ var tokenList = [
 ]
 
 //Additional Regexs
-var commentRegex = /^#.*/;
+var commentRegex = /#(?=(?:(?:[^"]*"){2})*[^"]*$).*/;
 
 
 // Useful Variables
