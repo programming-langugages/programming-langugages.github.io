@@ -1,3 +1,16 @@
+// grammar
+var inputGrammar =
+`GLOBAL -> global id GLOBAL_BODY end
+GLOBAL_BODY -> TYPE_DECLARATIONS  | CONSTANT_DECLARATIONS
+CONSTANT_DECLARATIONS-> const id tk_igual tk_num
+TYPE_DECLARATIONS -> int | float
+
+RESOURCE_SPECFICATION -> spec identifier
+
+FUNCTION -> abs par_der PARAMETER par_izq
+PARAMETER -> identifier comma PARAMETER | identifier`
+
+
 //List of all tokens
 var tokenList = [
     {
@@ -181,7 +194,7 @@ var tokenList = [
         hardRegex: /^\.\.\.$/,
         softRegex: /^\.\.\./,
         print: "onlyToken"
-    },   
+    },
     {
         name: "tk_porcentaje",
         hardRegex: /^%$/,
@@ -199,6 +212,13 @@ var lexical_analysis;
 var partial_lexical_analysis;
 var wordsToAnalyse = []
 
+//Function to compute the first of the each of the grammar
+function computeSetFirst(){
+
+
+}
+
+
 //Function to get next token
 function getNextToken(){
     if(wordsToAnalyse.length==0)
@@ -215,6 +235,7 @@ function getNextToken(){
 
 //Function that splits the code by breaklines and spaces to obtain the WORD
 function lexicalAnalyzer(input, only_load) {
+    generateGrammar(inputGrammar);
     lexical_analysis = "";
     var code;
     if (!input)
@@ -248,8 +269,29 @@ function lexicalAnalyzer(input, only_load) {
         return lexical_analysis;
     }
 }
+//Function that generates the grammar based on the variable
+function generateGrammar(inputGrammar){
 
+  var grammar = {};
+  var lines = inputGrammar.match(/[^\r\n]+/g);
+  var myRegexp = /->/;
+  var derivations = [];
+  for(let line of lines){
+    derivations = [];
+    var matched = line.split(/->/g);
+    var leftSideRule = matched[0];
+    var rightSideRule = matched[1];
+    var derivationsRightSideRule = rightSideRule.split(/\|/g);
+    for(let derivation of derivationsRightSideRule){
+      derivations.push(derivation);
 
+    }
+    grammar[leftSideRule] = derivations;
+    console.log(leftSideRule + " /// "  + rightSideRule);
+    console.log(derivationsRightSideRule);
+    console.log(grammar);
+  }
+}
 //Function that finds the token that matches that WORD, but only when it is an absolute match
 function findToken(word, row){
     var matched = false;
@@ -328,15 +370,61 @@ function print(token, word, column, row){
 }
 
 
+
+
+
+// function readTextFile(){
+//
+//   var file = this.files[0];
+//
+//   var reader = new FileReader();
+//   reader.onload = function(progressEvent){
+//     // Entire file
+//     console.log(this.result);
+//
+//     // By lines
+//     var lines = this.result.split('\n');
+//     for(var line = 0; line < lines.length; line++){
+//       console.log(lines[line]);
+//     }
+//   };
+//   reader.readAsText(file);
+// }
+
+
+function handleFiles(input) {
+
+    const file = input.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+        const file = event.target.result;
+        const allLines = file.split(/\r\n|\n/);
+        // Reading line by line
+        allLines.forEach((line) => {
+            console.log(line);
+        });
+    };
+
+    reader.onerror = (event) => {
+        alert(event.target.error.name);
+    };
+
+    reader.readAsText(file);
+}
 //Function that reads a file
-function readTextFile(file) {
+function readTextFile(file)
+{
     var rawFile = new XMLHttpRequest();
     rawFile.open("GET", file, false);
-    rawFile.onreadystatechange = function() {
-        if (rawFile.readyState === 4) {
-            if (rawFile.status === 200 || rawFile.status == 0) {
+    rawFile.onreadystatechange = function ()
+    {
+        if(rawFile.readyState === 4)
+        {
+            if(rawFile.status === 200 || rawFile.status == 0)
+            {
                 var allText = rawFile.responseText;
-                alert(allText);
+                fileDisplayArea.innerText = allText
             }
         }
     }
