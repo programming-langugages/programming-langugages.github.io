@@ -1,7 +1,7 @@
 ﻿
   
 
-# Analizar Léxico - Lenguaje SP
+# Analizador Léxico - Lenguaje SP
 
 ## Autores
 1. Brayan Steven García Cardenas - bsgarciac
