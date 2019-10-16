@@ -14,7 +14,7 @@ p{
     padding: 0 30px;
 }
 
-.header p{
+.header .title{
     margin: 0;
     font-size: 20px; 
 }
@@ -70,4 +70,13 @@ p{
 
 .token_reserved{
     background-color: lightblue;
+}
+
+.margin-left{
+    margin-left: 15px;
+}
+
+.names{
+    font-size: 18px;
+    margin-left: auto;
 }

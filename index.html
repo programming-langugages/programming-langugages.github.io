@@ -13,18 +13,14 @@
         <link rel="stylesheet" type="text/css" href="styles.css">
     </head>
     <body>
-        <div class="z-depth-2 header"><p>Analizador léxico SP Language</p></div>
+        <div class="z-depth-2 header"><p class="title">Analizador léxico y sintactico lenguaje SP</p><p class="names">Brayan Garcia & Nicolás Restrepo</p></div>
         <div class="customContainer">
             <div class="leftContainer">
                 <textarea rows="50" cols="50"  id="codeTextArea"></textarea>
                 <div class="buttonsContainer">                   
-                    <a class="btn-floating btn-small  waves-effect waves-light red" onclick="lexicalAnalyzer();"><i class="material-icons">play_arrow</i></a>
-                    <a class="btn-floating btn-small  waves-effect waves-light" onclick="getNextToken();"><i class="material-icons">skip_next</i></a>  
-                    <a class="btn-floating btn-small  waves-effect waves-light" onclick="testInputs();"><i class="material-icons">file_copy</i></a>  
-                </div>    
-                <!-- <div class="codeContainer">
-                    <p id="code"></p>
-                </div> -->      
+                    <a class="btn-floating btn-small  waves-effect waves-light red" onclick="lexicalAnalyzer();"><i class="material-icons">play_arrow</i></a> Léxico 
+                    <a class="btn-floating btn-small  waves-effect waves-light margin-left" onclick="syntacticalAnalyzer();"><i class="material-icons">play_arrow</i></a>  Sintactico
+                </div>         
             </div>
             <div class="rightContainer">
                 <a class="clearButton btn-floating btn-small  waves-effect waves-light" onclick="clearAll();"><i class="material-icons">clear</i></a>
