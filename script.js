@@ -1,7 +1,9 @@
 // Grammar
 var inputGrammar =
-`FUNCTION -> abs par_der PARAMETER par_izq
-PARAMETER -> identifier comma PARAMETER | identifier`
+`A -> B C | ant A all
+B -> big C | bus A boss | epsilon
+C -> cat | epsilon
+`
 
 
 //List of all tokens
@@ -207,11 +209,6 @@ var wordsToAnalyse = []
 
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
 
-//Function to compute the first of the each of the grammar
-function computeSetFirst(){
-
-
-}
 
 //Function that generates the grammar based on the variable
 var grammar = {};
@@ -226,13 +223,10 @@ function generateGrammar(){
       var derivationsRightSideRule = rightSideRule.split(/\|/g);
       for(let derivation of derivationsRightSideRule){
         derivations.push(derivation.replace(/\s/, ''));
-  
       }
-      grammar[leftSideRule.replace(/\s/, '')] = derivations;
-      console.log(leftSideRule + " /// "  + rightSideRule);
-      console.log(derivationsRightSideRule);
-      console.log(grammar);   
+      grammar[leftSideRule.replace(/\s/, '')] = derivations;    
     }
+    console.log("%c GRAMMAR", 'color: blue', grammar); 
     $('#result').html("<i>Grammar generated</i>")
   }
 
@@ -242,23 +236,70 @@ function syntacticalAnalyzer(){
     generatePrimeros()
 }
 
-var primeros = {}
-function generatePrimeros(){ 
-    for(let key of Object.keys(grammar))
-        for(let rule of grammar[key])
-            getPrimeros(key, rule)
+function isTerminal(token){
+    return !Object.keys(grammar).includes(token);
 }
 
-function getPrimeros(leftSide, rightSide){
-    if(rightSide == 'epsilon')
-        primeros[leftSide] = 'epsilon' 
-    var splitted = rightSide.trim().split(/\s/g);
-    for(let a of splitted){
-        if(Object.keys(grammar).includes(a)){
-            console.log("%c Is no terminal", "color: blue", a)
+//PRIMEROS functions
+var primeros = {}
+function generatePrimeros(){ 
+    for(let key of Object.keys(grammar).reverse()){
+        primeros[key] = []
+        for(let rule of grammar[key])
+            generatePrimerosOfNoTerminal(key, rule)
+    }     
+    console.log("%c PRIMEROS", "color: green", primeros)
+}
+
+function generatePrimerosOfNoTerminal(leftSide, rightSide){
+    var tokens = rightSide.split(/\s/g);
+    for(let token of tokens){
+        if(!isTerminal(token)){ //If it is NO terminal
+            if(primeros[token].includes('epsilon')){ //If only has epsilon
+                if(primeros[token].length == 1){
+                    primeros[leftSide].push('epsilon')
+                    return;
+                }
+                var aux = [...primeros[token]] //Doing a copy of the array
+                var epsilon_index = primeros[token].indexOf('epsilon');
+                aux.splice(epsilon_index, 1) //Removing epsilon of the copy
+                primeros[leftSide] = primeros[leftSide].concat(aux)
+            }else{
+                primeros[leftSide] = primeros[leftSide].concat(primeros[token])
+                return;
+            }    
+        }else if(token != ''){ //If it is terminal and not empty
+            primeros[leftSide].push(token)
+            return;
         }
     }
-    console.log(splitted)
+    primeros[leftSide].push('epsilon') //If all derivations have epsilon   
+}
+
+//Function that will be used in prediction
+function getPrimeros(rule){
+    var tokens = rule.split(/\s/g); 
+    var response = []
+    for(let token of tokens){
+        if(!isTerminal(token)){ //If it is NO terminal
+            if(primeros[token].includes('epsilon')){
+                if(primeros[token].length == 1){ //If only has epsilon
+                    return ['epsilon']
+                }
+                var aux = [...primeros[token]] //Doing a copy of the array
+                var epsilon_index = primeros[token].indexOf('epsilon');
+                aux.splice(epsilon_index, 1) //Removing epsilon of the copy
+                response = response.concat(aux)
+            }else{
+                if(response.length > 0)
+                    return response.concat(primeros[token])
+                return primeros[token]
+            }    
+        }else if(token != ''){ //If it is terminal and not empty
+            return [token]
+        }
+    } 
+    return response.concat('epsilon') //If all derivations have epsilon  
 }
 
 //Function to get next token
