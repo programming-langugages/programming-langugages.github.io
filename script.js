@@ -2,7 +2,9 @@
 var inputGrammar =
 `A -> B C | ant A all
 B -> big C | bus A boss | epsilon
-C -> cat | epsilon
+C -> cat | cow
+D -> spliff | wutend | shark C E | epsilon
+E -> brayan | es toxico C
 `
 
 
@@ -199,6 +201,7 @@ var tokenList = [
 ]
 
 //Additional Regexs
+// This regexp matches to the comments after some piece of code and by itself
 var commentRegex = /#(?=(?:(?:[^"]*"){2})*[^"]*$).*/;
 
 
@@ -224,16 +227,17 @@ function generateGrammar(){
       for(let derivation of derivationsRightSideRule){
         derivations.push(derivation.replace(/\s/, ''));
       }
-      grammar[leftSideRule.replace(/\s/, '')] = derivations;    
+      grammar[leftSideRule.replace(/\s/, '')] = derivations;
     }
-    console.log("%c GRAMMAR", 'color: blue', grammar); 
+    console.log("%c GRAMMAR", 'color: blue', grammar);
     $('#result').html("<i>Grammar generated</i>")
   }
 
 //Main function for syntactical analyzer
 function syntacticalAnalyzer(){
-    generateGrammar()
-    generatePrimeros()
+    generateGrammar();
+    generatePrimeros();
+    generateSiguientes();
 }
 
 function isTerminal(token){
@@ -241,13 +245,16 @@ function isTerminal(token){
 }
 
 //PRIMEROS functions
-var primeros = {}
-function generatePrimeros(){ 
+var primeros = {};
+var siguientes = {};
+function generatePrimeros(){
     for(let key of Object.keys(grammar).reverse()){
         primeros[key] = []
         for(let rule of grammar[key])
             generatePrimerosOfNoTerminal(key, rule)
-    }     
+    }
+    for(let noTerminal of Object.keys(primeros))
+      primeros[noTerminal] = primeros[noTerminal].filter((item, index) => primeros[noTerminal].indexOf('epsilon') != index)
     console.log("%c PRIMEROS", "color: green", primeros)
 }
 
@@ -267,18 +274,18 @@ function generatePrimerosOfNoTerminal(leftSide, rightSide){
             }else{
                 primeros[leftSide] = primeros[leftSide].concat(primeros[token])
                 return;
-            }    
+            }
         }else if(token != ''){ //If it is terminal and not empty
             primeros[leftSide].push(token)
             return;
         }
     }
-    primeros[leftSide].push('epsilon') //If all derivations have epsilon   
+    primeros[leftSide].push('epsilon') //If all derivations have epsilon
 }
 
 //Function that will be used in prediction
 function getPrimeros(rule){
-    var tokens = rule.split(/\s/g); 
+    var tokens = rule.split(/\s/g);
     var response = []
     for(let token of tokens){
         if(!isTerminal(token)){ //If it is NO terminal
@@ -294,12 +301,77 @@ function getPrimeros(rule){
                 if(response.length > 0)
                     return response.concat(primeros[token])
                 return primeros[token]
-            }    
+            }
         }else if(token != ''){ //If it is terminal and not empty
             return [token]
         }
-    } 
-    return response.concat('epsilon') //If all derivations have epsilon  
+    }
+    return response.concat('epsilon') //If all derivations have epsilon
+}
+
+
+
+
+//Function to generate set of siguientes of all the rules
+function generateSiguientes(){
+  for(let key of Object.keys(grammar)){
+        // console.log("KEY " + key.toString());
+        siguientes[key] = []
+        if(Object.keys(grammar)[0] == key) siguientes[key].push('$') //If it is the first rule, add the symbol $
+
+        generateSiguientesEachRule(key);
+  }
+  console.log("%c SIGUIENTES", "color: red", siguientes)
+}
+//Function to compute siguientes based on a rule on which it will be generated
+function generateSiguientesEachRule(ruleToGenerate){
+
+    for(let key of Object.keys(grammar)){
+        for(let rule of grammar[key]){
+            generateSiguientesOfNoTerminal(key, rule, ruleToGenerate)
+          }
+    }
+
+}
+
+
+function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
+    var tokens = rightSide.split(/\s/g);
+    // console.log("Right side: " + rightSide.toString() + " ruleToGenerate " + ruleToGenerate.toString());
+    if(!isTerminal(leftSide)){
+      for(let token of tokens){
+        if(token == ruleToGenerate){
+          var indexNextToken = tokens.indexOf(token) + 1;
+          // console.log(tokens[indexNextToken]);
+          if(tokens[indexNextToken]){
+
+            if(!isTerminal(tokens[indexNextToken])){
+              var aux = [...primeros[tokens[indexNextToken]]]
+              if(aux.includes('epsilon')){
+                var epsilon_index = primeros[tokens[indexNextToken]].indexOf('epsilon');
+                aux.splice(epsilon_index, 1) //Removing epsilon of the copy
+              }
+              siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(aux);
+              // console.log(primeros[tokens[indexNextToken]]);
+              if(primeros[tokens[indexNextToken]].includes('epsilon')){
+                  // console.log("1 Adding this to " + ruleToGenerate.toString());
+                  // console.log(siguientes[leftSide]);
+                  siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(siguientes[leftSide]);
+              }
+            } else {
+              // console.log("2 Adding this " + tokens[indexNextToken].toString() + " to " + ruleToGenerate.toString());
+              if(tokens[indexNextToken] != 'epsilon') siguientes[ruleToGenerate].push(tokens[indexNextToken]);
+            }
+          } else {
+            // console.log("3 Adding siguientes of left Side:  "  + leftSide + " to " + ruleToGenerate.toString() );
+            // console.log(siguientes[leftSide]);
+            if(siguientes[leftSide]) siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(siguientes[leftSide])
+          }
+        }
+      }
+    }
+
+
 }
 
 //Function to get next token
