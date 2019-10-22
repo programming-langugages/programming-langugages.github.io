@@ -3,8 +3,6 @@ var inputGrammar =
 `A -> B C | ant A all
 B -> big C | bus A boss | epsilon
 C -> cat | cow
-D -> spliff | wutend | shark C E | epsilon
-E -> brayan | es toxico C
 `
 
 
@@ -238,23 +236,21 @@ function syntacticalAnalyzer(){
     generateGrammar();
     generatePrimeros();
     generateSiguientes();
+    generatePrediccion();
 }
 
 function isTerminal(token){
     return !Object.keys(grammar).includes(token);
 }
 
-//PRIMEROS functions
+//-----PRIMEROS functions----
 var primeros = {};
-var siguientes = {};
 function generatePrimeros(){
-    for(let key of Object.keys(grammar).reverse()){
-        primeros[key] = []
-        for(let rule of grammar[key])
-            generatePrimerosOfNoTerminal(key, rule)
+    for(let noTerminal of Object.keys(grammar).reverse()){
+        primeros[noTerminal] = []
+        for(let rule of grammar[noTerminal])
+            generatePrimerosOfNoTerminal(noTerminal, rule)
     }
-    for(let noTerminal of Object.keys(primeros))
-      primeros[noTerminal] = primeros[noTerminal].filter((item, index) => primeros[noTerminal].indexOf('epsilon') != index)
     console.log("%c PRIMEROS", "color: green", primeros)
 }
 
@@ -310,8 +306,9 @@ function getPrimeros(rule){
 }
 
 
+//-----SIGUIENTES functions----
 
-
+var siguientes = {};
 //Function to generate set of siguientes of all the rules
 function generateSiguientes(){
   for(let key of Object.keys(grammar)){
@@ -333,7 +330,6 @@ function generateSiguientesEachRule(ruleToGenerate){
     }
 
 }
-
 
 function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
     var tokens = rightSide.split(/\s/g);
@@ -370,9 +366,39 @@ function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
         }
       }
     }
-
-
 }
+
+
+//-----PREDICCION functions----
+var prediccion = []
+var prediccionDebug = [] //Beutiful console debug
+function generatePrediccion(){
+    for(let noTerminal of Object.keys(grammar)){
+        for(let rule of grammar[noTerminal]){
+            let set = {
+                leftSide: noTerminal,
+                rightSide: rule,
+            }
+            let debugSet = {...set}
+            var primeros = getPrimeros(rule)
+            var index = primeros.indexOf('epsilon');
+            if(index == -1){ //No epsilon
+                set['prediction'] = primeros
+                debugSet['prediction'] = primeros.toString()
+            }else{
+                primeros.splice(index, 1)
+                set['prediction'] = primeros.concat(siguientes[noTerminal])
+                debugSet['prediction'] = primeros.concat(siguientes[noTerminal]).toString()
+            }
+            prediccion.push(set)
+            prediccionDebug.push(debugSet)
+        }
+        
+    }
+    console.log("%c \n PREDICCION:", "color: orange")
+    console.table( prediccionDebug)
+}
+
 
 //Function to get next token
 function getNextToken(){
