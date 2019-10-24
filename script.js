@@ -407,7 +407,7 @@ function generatePrediccion(){
     console.table( prediccionDebug)
 }
 
-//FALLA ant cat, y ant bat bota tres mensajes de error
+//Bota tres mensajes de error
 function genericAnalyze(noTerminal){
     var matched = false;
     var rules = prediccion.filter((item,index)=>item["leftSide"]==noTerminal) //Get all rules of that no terminal
@@ -431,9 +431,12 @@ function genericAnalyze(noTerminal){
                     } 
                     token = getNextToken();
                     if(token == 'EOF'){
-                        if(i != rightSideSplitted.length - 1)
+                        if(i != rightSideSplitted.length - 1){
                             console.error("Error sintactico");
-                        return 'stop';
+                            return 'stop';
+
+                        }
+                        return 'continue';
                     }  
                 }                
             }
