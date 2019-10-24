@@ -206,6 +206,7 @@ var commentRegex = /#(?=(?:(?:[^"]*"){2})*[^"]*$).*/;
 // Useful Variables
 var lexical_analysis;
 var partial_lexical_analysis;
+var currentToken; 
 var wordsToAnalyse = []
 
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
@@ -228,15 +229,25 @@ function generateGrammar(){
       grammar[leftSideRule.replace(/\s/, '')] = derivations;
     }
     console.log("%c GRAMMAR", 'color: blue', grammar);
-    $('#result').html("<i>Grammar generated</i>")
   }
 
 //Main function for syntactical analyzer
+var token;
+var primeros;
+var siguientes;
+var prediccion;
+var prediccionDebug; //Beutiful console debug
 function syntacticalAnalyzer(){
+    primeros = {}
+    siguientes = {}
+    prediccion = []
+    prediccionDebug = [] //Beutiful console debug
+    lexicalAnalyzer(null, true) //Load tokens
     generateGrammar();
     generatePrimeros();
     generateSiguientes();
     generatePrediccion();
+    mainSyntactical();
 }
 
 function isTerminal(token){
@@ -244,7 +255,7 @@ function isTerminal(token){
 }
 
 //-----PRIMEROS functions----
-var primeros = {};
+
 function generatePrimeros(){
     for(let noTerminal of Object.keys(grammar).reverse()){
         primeros[noTerminal] = []
@@ -308,7 +319,6 @@ function getPrimeros(rule){
 
 //-----SIGUIENTES functions----
 
-var siguientes = {};
 //Function to generate set of siguientes of all the rules
 function generateSiguientes(){
   for(let key of Object.keys(grammar)){
@@ -370,8 +380,6 @@ function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
 
 
 //-----PREDICCION functions----
-var prediccion = []
-var prediccionDebug = [] //Beutiful console debug
 function generatePrediccion(){
     for(let noTerminal of Object.keys(grammar)){
         for(let rule of grammar[noTerminal]){
@@ -399,18 +407,67 @@ function generatePrediccion(){
     console.table( prediccionDebug)
 }
 
+//FALLA ant cat, y ant bat bota tres mensajes de error
+function genericAnalyze(noTerminal){
+    var matched = false;
+    var rules = prediccion.filter((item,index)=>item["leftSide"]==noTerminal) //Get all rules of that no terminal
+    for(let rule of rules){   
+        if(rule.prediction.includes(token.name)){ //If that token exists in prediccion
+            matched = true;
+            let rightSideSplitted = rule.rightSide.split(/\s/g);
+            rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
+            for(let i=0; i<rightSideSplitted.length;i++){
+                let alpha = rightSideSplitted[i] 
+                if(!isTerminal(alpha)){
+                    let option = genericAnalyze(alpha)
+                    if(option == 'stop') return 'stop'; //If there is an error we need to stop the algorithm
+                }else{
+                    if(alpha == 'epsilon'){ 
+                        return 'continue';
+                    }
+                    else if (token.name != alpha) {
+                        console.error("Error sintactico"); 
+                        return 'stop';
+                    } 
+                    token = getNextToken();
+                    if(token == 'EOF'){
+                        if(i != rightSideSplitted.length - 1)
+                            console.error("Error sintactico");
+                        return 'stop';
+                    }  
+                }                
+            }
+        }
+    }   
+    if(!matched)
+        console.error("Error sintactico"); 
+}
+
+function mainSyntactical(){
+    token =  getNextToken() //First token
+    genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
+    if(token != 'EOF')
+        console.error("Error sintactico");
+}
+
 
 //Function to get next token
+
 function getNextToken(){
     if(wordsToAnalyse.length==0)
-        lexicalAnalyzer(null, true)
-    token = wordsToAnalyse.shift()
-    findToken(token.word, token.row)
-    console.log(partial_lexical_analysis)
-    $('#result').append(partial_lexical_analysis.replace(/&/g, '&amp;')
-                                        .replace(/>/g, '&gt;')
-                                        .replace(/</g, '&lt;')
-                                        .replace(/\n/g,'<br/>'))
+        return 'EOF'
+    // ----------- GET NEXT TOKEN FOR TEST 
+    var aux = wordsToAnalyse.shift()
+    token = {name: aux.word.name}
+    return token 
+    // ----------- REAL NEXT TOKEN
+    //token = wordsToAnalyse.shift()
+    //findToken(token.word, token.row)
+    //$('#result').append(partial_lexical_analysis.replace(/&/g, '&amp;')
+                                        //.replace(/>/g, '&gt;')
+                                        //.replace(/</g, '&lt;')
+                                        //.replace(/\n/g,'<br/>'))
+    //return(currentToken)
 }
 
 
@@ -497,6 +554,7 @@ function deepFindToken(word, row, column) {
         }
     } else {
         partial_lexical_analysis = ">>> Error lexico(linea:" + row + ",posicion:" + column + ")\n"
+        console.error("Error lexico")
         lexical_analysis += partial_lexical_analysis
     }
 }
@@ -519,6 +577,7 @@ function splitWithIndex(line){
 
 //Function that prints the token
 function print(token, word, column, row){
+    currentToken = {name: token.name, lexema: word, row: row, column: column}
     if (token.print == "onlyWord")
         partial_lexical_analysis = "<" + word + "," + row + "," + column + ">\n";
     else if (token.print == "onlyToken")
