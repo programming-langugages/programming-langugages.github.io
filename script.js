@@ -1,8 +1,7 @@
 // Grammar
 var inputGrammar =
-`A -> B C | ant A all
-B -> big C | bus A boss | epsilon
-C -> cat | cow
+`function -> ( parameter )
+parameter ->  id , parameter |  id  | epsilon
 `
 
 
