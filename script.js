@@ -196,6 +196,13 @@ var tokenList = [
         softRegex: /^%/,
         print: "onlyToken"
     },
+    //New tokens for SYNTACTICAL
+    {
+        name: "tk_ampersand",
+        hardRegex: /^&$/,
+        softRegex: /^&/,
+        print: "onlyToken"
+    }
 ]
 
 //Additional Regexs
@@ -206,7 +213,7 @@ var commentRegex = /#(?=(?:(?:[^"]*"){2})*[^"]*$).*/;
 // Useful Variables
 var lexical_analysis;
 var partial_lexical_analysis;
-var currentToken; 
+var currentToken;
 var wordsToAnalyse = []
 
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
@@ -236,13 +243,15 @@ var token;
 var primeros;
 var siguientes;
 var prediccion;
-var prediccionDebug; //Beutiful console debug
+var prediccionDebug; //Beautiful console debug, not that beautiful but useful though.
+var syntacticColumn;
+var syntacticRow;
 function syntacticalAnalyzer(){
     primeros = {}
     siguientes = {}
     prediccion = []
     prediccionDebug = [] //Beutiful console debug
-    lexicalAnalyzer(null, true) //Load tokens
+    lexicalAnalyzer(null, true); //Load tokens
     generateGrammar();
     generatePrimeros();
     generateSiguientes();
@@ -401,68 +410,118 @@ function generatePrediccion(){
             prediccion.push(set)
             prediccionDebug.push(debugSet)
         }
-        
+
     }
     console.log("%c \n PREDICCION:", "color: orange")
     console.table( prediccionDebug)
 }
 
 //Bota tres mensajes de error
-function genericAnalyze(noTerminal){
+function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     var matched = false;
     var rules = prediccion.filter((item,index)=>item["leftSide"]==noTerminal) //Get all rules of that no terminal
-    for(let rule of rules){   
+    for(let rule of rules){
         if(rule.prediction.includes(token.name)){ //If that token exists in prediccion
+
             matched = true;
             let rightSideSplitted = rule.rightSide.split(/\s/g);
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
             for(let i=0; i<rightSideSplitted.length;i++){
-                let alpha = rightSideSplitted[i] 
+                let alpha = rightSideSplitted[i]
                 if(!isTerminal(alpha)){
-                    let option = genericAnalyze(alpha)
+                    let option = genericAnalyze(alpha, rightSideSplitted, i);
                     if(option == 'stop') return 'stop'; //If there is an error we need to stop the algorithm
                 }else{
-                    if(alpha == 'epsilon'){ 
+                    if(alpha == 'epsilon'){
                         return 'continue';
                     }
                     else if (token.name != alpha) {
-                        console.error("Error sintactico"); 
+                        printSyntacticalError(token, rightSideSplitted, i);
                         return 'stop';
-                    } 
+                    }
                     token = getNextToken();
+                    if(token != 'EOF') syntacticColumn += token.name.length;  // Updating the row of the analysis. Add 1 if couting whitespaces
                     if(token == 'EOF'){
                         if(i != rightSideSplitted.length - 1){
-                            console.error("Error sintactico");
+                            printSyntacticalError(token, rightSideSplitted, i);
                             return 'stop';
 
                         }
                         return 'continue';
-                    }  
-                }                
+                    }
+                }
             }
         }
-    }   
+    }
+
+    //Case no rule is matched
     if(!matched)
-        console.error("Error sintactico"); 
+        printSyntacticalError(token, lastRightSide, lastSeenPosition);
+
 }
 
 function mainSyntactical(){
     token =  getNextToken() //First token
+    syntacticColumn = 0; syntacticRow = 0;
     genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
     if(token != 'EOF')
-        console.error("Error sintactico");
+        printSyntacticalError(token);
+    else console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
 }
 
+//Function to print a syntacticalError
+function printSyntacticalError(token, lastRightSide, lastSeenPosition){
+  if(!lastRightSide){
+    lastRightSide = Object.keys(grammar)[0];
+    lastSeenPosition = 0;
+  }
+  if(!token.name) var tokenFound = token;
+  else var tokenFound = token.name.toString();
+  console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastRightSide, lastSeenPosition));
+}
 
+//Function to add text to output accordingly to expected syntax
+function addMissingFromExpectedFromRule(rightSideRule, expectedFromPosition){
+
+  var expected = "";
+  //Build from the part of the expected rule all the tokens that were missing
+  for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
+    var currentAlpha = rightSideRule[i];
+    //If is not terminal it must be added all the no terminals from primeros set
+    if(!isTerminal(currentAlpha)){
+      for (let x = 0; x < primeros[currentAlpha].length ; x++){
+        expected += "\"";
+        expected += primeros[currentAlpha][x];
+        if (i == rightSideRule.length - 1 && x == primeros[currentAlpha].length - 1) expected += "\"";
+        else expected += "\",";
+      }
+    } else {
+      expected += "\"";
+      expected += rightSideRule[i].toString();
+      if (i == rightSideRule.length - 1) expected += "\"";
+      else expected += "\",";
+    }
+    return expected;
+  }
+  //TODO: Fill this in with the tokens later
+  // for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
+  //   expected += "\"";
+  //   expected = rightSideRule[i].toString();
+  //   if (i == rightSideRule.length - 1) expected += "\"";
+  //   else expected += "\",";
+  // }
+}
 //Function to get next token
 
 function getNextToken(){
-    if(wordsToAnalyse.length==0)
+    if(wordsToAnalyse.length == 0)
         return 'EOF'
-    // ----------- GET NEXT TOKEN FOR TEST 
+    // ----------- GET NEXT TOKEN FOR TEST
+
     var aux = wordsToAnalyse.shift()
+    syntacticRow = aux.row;
     token = {name: aux.word.name}
-    return token 
+    return token
     // ----------- REAL NEXT TOKEN
     //token = wordsToAnalyse.shift()
     //findToken(token.word, token.row)
