@@ -1,7 +1,8 @@
 // Grammar
 var inputGrammar =
 `function -> ( parameter )
-parameter ->  id , parameter |  id  | epsilon
+parameter -> id parameter' | epsilon
+parameter' -> , id parameter' | epsilon
 `
 
 
@@ -427,6 +428,13 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
             for(let i=0; i<rightSideSplitted.length;i++){
                 let alpha = rightSideSplitted[i]
+                console.log("/////////////");
+                console.log(i);
+                console.log(alpha);
+                console.log(token);
+                console.log(rule);
+                console.log(rule.rightSide);
+                console.log("//");
                 if(!isTerminal(alpha)){
                     let option = genericAnalyze(alpha, rightSideSplitted, i);
                     if(option == 'stop') return 'stop'; //If there is an error we need to stop the algorithm
