@@ -1,8 +1,10 @@
 // Grammar
 var inputGrammar =
-`function -> ( parameter )
-parameter -> id parameter' | epsilon
-parameter' -> , id parameter' | epsilon
+`function -> tk_par_izq parameter tk_par_der
+parameter -> id parameter'
+parameter -> epsilon
+parameter' -> tk_coma id parameter'
+parameter' -> epsilon
 `
 
 
@@ -31,104 +33,121 @@ var tokenList = [
         name: "tk_asig",
         hardRegex: /^:=$/,
         softRegex: /^:=/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ":="
     },
     {
         name: "tk_coma",
         hardRegex: /^,$/,
         softRegex: /^,/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ","
     },
     {
         name: "tk_cor_der",
         hardRegex: /^\]$/,
         softRegex: /^\]/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "]"
     },
     {
         name: "tk_cor_izq",
         hardRegex: /^\[$/,
         softRegex: /^\[/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "["
     },
     {
         name: "tk_corche_izq",
         hardRegex: /^{$/,
         softRegex: /^{/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "{"
     },
     {
         name: "tk_corche_der",
         hardRegex: /^}$/,
         softRegex: /^}/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "}"
     },
     {
         name: "tk_distinto",
         hardRegex: /^!=$/,
         softRegex: /^!=/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "!="
     },
     {
         name: "tk_dos_puntos",
         hardRegex: /^:$/,
         softRegex: /^:/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ":"
     },
     {
         name: "tk_ejecuta",
         hardRegex: /^->$/,
         softRegex: /^->/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "->"
     },
     {
         name: "tk_igual",
         hardRegex: /^=$/,
         softRegex: /^=/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "="
     },
     {
         name: "tk_menorque",
         hardRegex: /^<$/,
         softRegex: /^</,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "<"
     },
     {
         name: "tk_mayorque",
         hardRegex: /^>$/,
         softRegex: /^>/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ">"
     },
     {
         name: "tk_expr_sinc",
         hardRegex: /^\?$/,
         softRegex: /^\?/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "?"
     },
     {
         name: "tk_multi",
         hardRegex: /^\*$/,
         softRegex: /^\*/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "*"
     },
     {
         name: "tk_par_izq",
         hardRegex: /^\($/,
         softRegex: /^\(/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "("
     },
     {
         name: "tk_par_der",
         hardRegex: /^\)$/,
         softRegex: /^\)/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ")"
     },
 
     {
         name: "tk_punto_y_coma",
         hardRegex: /^;$/,
         softRegex: /^;/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ";"
     },
     {
         name: "tk_num",
@@ -140,68 +159,79 @@ var tokenList = [
         name: "tk_menos",
         hardRegex: /^-$/,
         softRegex: /^-/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "-"
     },
     {
         name: "tk_separa",
         hardRegex: /^\[\]/,
         softRegex: /^\[\]/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "[]"
     },
     {
         name: "tk_suma",
         hardRegex: /^\+$/,
         softRegex: /^\+/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "+"
     },
     {
         name: "mod",
         hardRegex: /^mod$/,
         softRegex: /^mod/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "mod"
     },
     {
         name: "tk_div",
         hardRegex: /^\/$/,
         softRegex: /^\//,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "/"
     },
     {
         name: "tk_punto",
         hardRegex: /^\.$/,
         softRegex: /^\./,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "."
     },
     {
         name: "tk_swap",
         hardRegex: /^:=:$/,
         softRegex: /^:=:/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: ":=:"
     },
     {
         name: "tk_tres_puntos",
         hardRegex: /^\.\.\.$/,
         softRegex: /^\.\.\.]/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "..."
     },
     {
         name: "tk_tres_puntos",
         hardRegex: /^\.\.\.$/,
         softRegex: /^\.\.\./,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "..."
     },
     {
         name: "tk_porcentaje",
         hardRegex: /^%$/,
         softRegex: /^%/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "%"
     },
     //New tokens for SYNTACTICAL
     {
         name: "tk_ampersand",
         hardRegex: /^&$/,
         softRegex: /^&/,
-        print: "onlyToken"
+        print: "onlyToken",
+        lexeme: "&"
     }
 ]
 
@@ -213,8 +243,11 @@ var commentRegex = /#(?=(?:(?:[^"]*"){2})*[^"]*$).*/;
 // Useful Variables
 var lexical_analysis;
 var partial_lexical_analysis;
-var currentToken;
+var currentTokenPosition = 0;
 var wordsToAnalyse = []
+var EOFlastSeenRightSide;
+var EOFlastSeenLeftSide;
+var EOFlastPosition;
 
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
 
@@ -233,7 +266,10 @@ function generateGrammar(){
       for(let derivation of derivationsRightSideRule){
         derivations.push(derivation.replace(/\s/, ''));
       }
-      grammar[leftSideRule.replace(/\s/, '')] = derivations;
+      var rule = leftSideRule.replace(/\s/, '');
+      //If the rule already exists, adds the derivations, otherwise it creates it
+      if(!grammar[rule]) grammar[rule] = derivations;
+      else for(let derivation of derivations) grammar[rule].push(derivation);
     }
     console.log("%c GRAMMAR", 'color: blue', grammar);
   }
@@ -251,7 +287,7 @@ function syntacticalAnalyzer(){
     siguientes = {}
     prediccion = []
     prediccionDebug = [] //Beutiful console debug
-    lexicalAnalyzer(null, true); //Load tokens
+    lexicalAnalyzer(true); //Load tokens
     generateGrammar();
     generatePrimeros();
     generateSiguientes();
@@ -331,7 +367,6 @@ function getPrimeros(rule){
 //Function to generate set of siguientes of all the rules
 function generateSiguientes(){
   for(let key of Object.keys(grammar)){
-        // console.log("KEY " + key.toString());
         siguientes[key] = []
         if(Object.keys(grammar)[0] == key) siguientes[key].push('$') //If it is the first rule, add the symbol $
 
@@ -420,39 +455,43 @@ function generatePrediccion(){
 function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     var matched = false;
     var rules = prediccion.filter((item,index)=>item["leftSide"]==noTerminal) //Get all rules of that no terminal
+    var lastLeftSide = noTerminal;
     for(let rule of rules){
         if(rule.prediction.includes(token.name)){ //If that token exists in prediccion
-
             matched = true;
             let rightSideSplitted = rule.rightSide.split(/\s/g);
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
             for(let i=0; i<rightSideSplitted.length;i++){
+              EOFlastSeenRightSide = rightSideSplitted;
+              EOFlastSeenLeftSide = lastLeftSide;
+              EOFlastPosition = i;
                 let alpha = rightSideSplitted[i]
-                console.log("/////////////");
-                console.log(i);
-                console.log(alpha);
-                console.log(token);
-                console.log(rule);
-                console.log(rule.rightSide);
-                console.log("//");
+                // console.log("xxxxxxxxxx");
+                // console.log(wordsToAnalyse);
+                // console.log(alpha);
+                // console.log(token);
+                // console.log(rule);
+                // console.log(rule.rightSide);
+                // console.log("xx");
                 if(!isTerminal(alpha)){
-                    let option = genericAnalyze(alpha, rightSideSplitted, i);
+                    let option = genericAnalyze(alpha, lastLeftSide, rightSideSplitted, i);
                     if(option == 'stop') return 'stop'; //If there is an error we need to stop the algorithm
                 }else{
                     if(alpha == 'epsilon'){
                         return 'continue';
                     }
                     else if (token.name != alpha) {
-                        printSyntacticalError(token, rightSideSplitted, i);
+                        printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
                         return 'stop';
                     }
-                    token = getNextToken();
-                    if(token != 'EOF') syntacticColumn += token.name.length;  // Updating the row of the analysis. Add 1 if couting whitespaces
+                    token = getNextToken(wordsToAnalyse);
+                    if(token != 'EOF') syntacticColumn = token.column;  // Updating the row of the analysis. Add 1 if couting whitespaces
                     if(token == 'EOF'){
                         if(i != rightSideSplitted.length - 1){
-                            printSyntacticalError(token, rightSideSplitted, i);
+                            printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
+                            //The last seen position here when an EOF is encountered is exactly the next one.
+                            EOFlastPosition +=  1;
                             return 'stop';
-
                         }
                         return 'continue';
                     }
@@ -462,88 +501,118 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     }
 
     //Case no rule is matched
-    if(!matched)
-        printSyntacticalError(token, lastRightSide, lastSeenPosition);
-
+    if(!matched){
+      printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition);
+      EOFlastSeenRightSide = lastRightSide;
+      EOFlastSeenLeftSide = lastLeftSide;
+      EOFlastPosition = lastSeenPosition;
+      return 'stop';
+    }
 }
 
 function mainSyntactical(){
-    token =  getNextToken() //First token
+    wordsToAnalyse = []
+    wordsToAnalyse = populateWordsToAnalyse();
+    token =  getNextToken(wordsToAnalyse, 0) //First token
     syntacticColumn = 0; syntacticRow = 0;
-    genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
-    if(token != 'EOF')
-        printSyntacticalError(token);
+    var result = genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
+    if(token != 'EOF' || result == 'stop')
+        printSyntacticalError(token, EOFlastSeenLeftSide, EOFlastSeenRightSide, EOFlastPosition);
     else console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
 }
 
 //Function to print a syntacticalError
-function printSyntacticalError(token, lastRightSide, lastSeenPosition){
+function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition){
   if(!lastRightSide){
-    lastRightSide = Object.keys(grammar)[0];
+    lastRightSide = grammar[Object.keys(grammar)[0]];
     lastSeenPosition = 0;
   }
-  if(!token.name) var tokenFound = token;
-  else var tokenFound = token.name.toString();
-  console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastRightSide, lastSeenPosition));
+  if(!lastLeftSide){
+    lastLeftSide = Object.keys(grammar)[0];
+  }
+  if(!token.name) var tokenFound = "fin de archivo";
+  else var tokenFound = token.lexeme.toString();
+  console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
 }
 
 //Function to add text to output accordingly to expected syntax
-function addMissingFromExpectedFromRule(rightSideRule, expectedFromPosition){
-
+function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFromPosition){
   var expected = "";
+
   //Build from the part of the expected rule all the tokens that were missing
   for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
     var currentAlpha = rightSideRule[i];
+    var derivationsOfAlpha = currentAlpha.split(/\s/g);
+    if(derivationsOfAlpha.length > 1)
+      expected += addMissingFromExpectedFromRule(leftSideRule, derivationsOfAlpha, 0);
     //If is not terminal it must be added all the no terminals from primeros set
-    if(!isTerminal(currentAlpha)){
-      for (let x = 0; x < primeros[currentAlpha].length ; x++){
+    else {
+      if(!isTerminal(currentAlpha)){
+        for (let x = 0; x < primeros[currentAlpha].length ; x++){
+          var currentPrimero = primeros[currentAlpha][x];
+          // Check better what to do with epsilons
+          if(currentPrimero == 'epsilon') continue;
+          //expected += "\"";
+          var derivationsOfPrimero = currentPrimero.split(/\s/g);
+          if(derivationsOfPrimero.length > 1){
+            for(let j = 0; j < derivationsOfPrimero.length; j ++ ){
+              expected += "\"";
+              expected += getTokenNameAndLexemeByWord(derivationsOfPrimero[j])["lexeme"];
+              if (!j == derivationsOfPrimero.length - 1) expected += "\",";
+            }
+          } else {
+            expected += "\"";
+            expected += getTokenNameAndLexemeByWord(currentPrimero)["lexeme"];
+          }
+
+          if (i == rightSideRule.length - 1 && x == primeros[currentAlpha].length - 1) expected += "\"";
+          else expected += "\",";
+        }
+      } else {
         expected += "\"";
-        expected += primeros[currentAlpha][x];
-        if (i == rightSideRule.length - 1 && x == primeros[currentAlpha].length - 1) expected += "\"";
+        expected += getTokenNameAndLexemeByWord(rightSideRule[i].toString())["lexeme"];
+        if (i == rightSideRule.length - 1) expected += "\"";
         else expected += "\",";
       }
-    } else {
-      expected += "\"";
-      expected += rightSideRule[i].toString();
-      if (i == rightSideRule.length - 1) expected += "\"";
-      else expected += "\",";
     }
-    return expected;
   }
-  //TODO: Fill this in with the tokens later
-  // for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
-  //   expected += "\"";
-  //   expected = rightSideRule[i].toString();
-  //   if (i == rightSideRule.length - 1) expected += "\"";
-  //   else expected += "\",";
-  // }
+  return expected;
 }
+
+
+
 //Function to get next token
 
-function getNextToken(){
-    if(wordsToAnalyse.length == 0)
+function getNextToken(wordsToAnalyse, position){
+  //If position is not passed to the function, it takes the next token
+  if(!position) position = currentTokenPosition;
+  else currentTokenPosition = position;
+    if(wordsToAnalyse.length == position)
         return 'EOF'
     // ----------- GET NEXT TOKEN FOR TEST
-
-    var aux = wordsToAnalyse.shift()
-    syntacticRow = aux.row;
-    token = {name: aux.word.name}
-    return token
-    // ----------- REAL NEXT TOKEN
-    //token = wordsToAnalyse.shift()
-    //findToken(token.word, token.row)
-    //$('#result').append(partial_lexical_analysis.replace(/&/g, '&amp;')
-                                        //.replace(/>/g, '&gt;')
-                                        //.replace(/</g, '&lt;')
-                                        //.replace(/\n/g,'<br/>'))
-    //return(currentToken)
+    // var aux = wordsToAnalyse.shift()
+    // syntacticRow = aux.row;
+    // token = {name: aux.word.name}
+    //return token
+    //----------- REAL NEXT TOKEN
+    var nextToken;
+    nextToken = wordsToAnalyse[position];
+    currentTokenPosition += 1;
+    syntacticRow = nextToken.row;
+    //console.log(findToken(token.word, token.row));
+    var nextTokenString = "<" + nextToken.name + ", \"" + nextToken.lexeme + "\", " + nextToken.row + ", " + nextToken.column + ">\n";
+    $('#result').append(nextTokenString.replace(/&/g, '&amp;')
+                                        .replace(/>/g, '&gt;')
+                                        .replace(/</g, '&lt;')
+                                        .replace(/\n/g,'<br/>'))
+    return nextToken;
 }
 
 
 //  -------------------------------------------------------------------------- LEXICAL ANALYZER --------------------------------------------------------------------------
 
 //Function that splits the code by breaklines and spaces to obtain the WORD
-function lexicalAnalyzer(input, only_load) {
+function lexicalAnalyzer(only_load, input) {
     lexical_analysis = "";
     var code;
     if (!input)
@@ -556,14 +625,16 @@ function lexicalAnalyzer(input, only_load) {
         var words = splitWithIndex(line)
         for(let word of words){
             if(word.name != ""){
-                if(!only_load){ //Sometimes we only need to load all the words but no do the analysis
+                // This is now commented because for getting the next token we are taking the output of the lexical analysis
+                //if(!only_load){ //Sometimes we only need to load all the words but no do the analysis
                     findToken(word, i+1)
                     if(partial_lexical_analysis.match(/Error lexico/)){
                         i = Number.MAX_SAFE_INTEGER //Force break of two loops
                         break;
                     }
-                }
+                //}
                 wordsToAnalyse.push({word:word, row: i+1})
+
             }
         }
     }
@@ -573,10 +644,62 @@ function lexicalAnalyzer(input, only_load) {
                                         .replace(/>/g, '&gt;')
                                         .replace(/</g, '&lt;')
                                         .replace(/\n/g,'<br/>'))
-        return lexical_analysis;
+
     }
+    return lexical_analysis;
 }
 
+// Function to populate dictionary to input to the function getNextToken
+// This function gets the lexeme of a token and transform the lexical_analysis into an usable dictionary
+
+function populateWordsToAnalyse() {
+    var currentName; var currentRow; var currentColumn; var currentLexeme;
+    var result = [];
+    var lines = lexical_analysis.split(/\n/);
+    for(var i = 0; i < lines.length; i++){
+        var line = lines[i].replace(/>/, '');
+        line = line.replace(/</, '');
+        var words = line.split(/,/g);
+        if(words.length == 3){ // If the token does not print the lexeme
+          currentName = getTokenNameAndLexemeByWord(words[0])["name"];
+          currentLexeme = getTokenNameAndLexemeByWord(words[0])["lexeme"];
+          currentRow = words[1];
+          currentColumn = words[2];
+        } else if(words.length == 4){
+          currentName = words[0];
+          currentLexeme = words[1];
+          currentRow = words[2];
+          currentColumn = words[3];
+        }
+        currentRow = parseInt(currentRow);
+        currentColumn = parseInt(currentColumn);
+        result.push({name: currentName, lexeme: currentLexeme, row: currentRow, column: currentColumn});
+    }
+    //Unexpected behavior, if the last token is failing probably this line has to be removed
+    result.pop();
+    return result;
+}
+
+
+function getTokenNameAndLexemeByWord(word){
+  var currentName; var currentLexeme;
+  for(let token of tokenList){
+    if(word.match(token.hardRegex) && token['name'] == 'reserved'){
+      currentName = word;
+      currentLexeme = word;
+    } else if(token['name'] == word){
+      currentName = token.name;
+      if(!token.lexeme) currentLexeme = word;
+      else currentLexeme = token.lexeme;
+    }
+  }
+  if(!currentLexeme){
+    currentLexeme = word;
+    currentName = word;
+  }
+  return {name: currentName, lexeme: currentLexeme};
+
+}
 
 //Function that finds the token that matches that WORD, but only when it is an absolute match
 function findToken(word, row){
@@ -584,7 +707,8 @@ function findToken(word, row){
     for(let token of tokenList){
         if(word.name.match(token.hardRegex)){
             matched = true;
-            print(token, word.name, word.column, row)
+            print(token, word.name, word.column, row);
+            return token
             break;
         }
     }
