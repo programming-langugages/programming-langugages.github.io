@@ -1,17 +1,95 @@
 // Grammar
 var inputGrammar =
-`GLOBAL -> global id GLOBAL_BODY end
-GLOBAL_BODY ->  CONSTANT_DECLARATION | ε
-CONSTANT_DECLARATION -> const id tk_igual tk_num
+// `GLOBAL -> global id GLOBAL_BODY end
+// GLOBAL_BODY ->  CONSTANT_DECLARATION | ε
+// CONSTANT_DECLARATION -> const id tk_igual tk_num
+
+//
+// `
+`SR_PROGRAM ->  RESOURCE_BODY
+
+
+RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY |   epsilon
+
+RESOURCE_BODY -> resource id RESOURCE_BODY'
+RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART end | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART end
+INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
+INTERFACE_PART -> CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | STATEMENTS
+
+
+
+
+
+CONSTANT_DECLARATION -> const id tk_asig ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS
+IMPORT_SPECIFICATION -> import IDS_GROUP
+OPERATION_DECLARATION ->  op id PARAMETER OPERATION_END
+TYPE_DECLARATION -> type id tk_igual rec par_izq TYPE_SPECIFICATION par_der
+EXTEND_DECLARATION -> extend IDS_GROUP
+
+
+
+PARAMETER -> par_izq PARAMETER_SPECIFICATION par_der
+PARAMETER_SPECIFICATION -> PARAMETER_ID tk_dos_puntos VAR_TYPE | PARAMETER_ID tk_dos_puntos VAR_TYPE tk_punto_coma PARAMETER_SPECIFICATION  |  epsilon
+PARAMETER_ID -> id | ARRAY  | res ARRAY
+OPERATION_END -> cor_izq OPERATION_TYPE cor_der | returns id tk_dos_puntos VAR_TYPE |  epsilon
+TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE  |  id tk_dos_puntos id VAR_TYPE  tk_punto_coma TYPE_SPECIFICATION
+
+
+EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
+
+
+
+
+
+
+
+
+
+EXPRESSION_VARIABLE ->  epsilon | tk_asignación ARITHMETHIC_EXPRESSION
+
+STATEMENTS -> STATEMENT STATEMENTS
+STATEMENT -> SEQUENTIAL_STATEMENT | epsilon
+SEQUENTIAL_STATEMENT -> skip
+SEQUENTIAL_STATEMENT -> VARIABLE_DECLARATION | IDS_GROUP tk_asignacion ARITHMETHIC_EXPRESSION
+SEQUENTIAL_STATEMENT -> VARIABLE_INSTANCE tk_suma tk_suma | VARIABLE tk_menos tk_menos
+SEQUENTIAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK tk_separa fi
+SEQUENTIAL_STATEMENT -> do BOOLEAN_EXPRESSION tk_ejecuta tk_separa od
+SEQUENTIAL_STATEMENT -> fs QUANTIFIER tk_ejecuta BLOCK af
+
+
+ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der | TERM ARITHMETHIC_EXPRESSIONS
+ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
+
+TERM -> VARIABLE_INSTANCE | tk_num
+OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi
+
+
+VARIABLES -> VARIABLES tk_coma | VARIABLE_DECLARATION |  epsilon
+
+
+
+
+VARIABLE_INSTANCE -> id VARIABLE_INSTANCE'
+VARIABLE_INSTANCE' -> tk_punto id | epsilon
+
+VARIABLE_DECLARATION -> var IDS_GROUP
+VARIABLE -> id
+
+VAR_TYPE -> int | cap | double | char
+IDS_GROUP -> id IDS_GROUP'
+IDS_GROUP' -> tk_coma IDS_GROUP' | epsilon
+
+
 `
+//OP_BINARIO -> > | < | >= | <= | eq | == | ne | != | && | || |         % | **
 
 
 //List of all tokens
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|body|const|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
-        softRegex: /^(global|body|const|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)/,
+        hardRegex: /^(global|body|const|create|receive|destroy|external|extend|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
+        softRegex: /^(global|body|const|create|receive|destroy|external|extend|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)/,
         print: "onlyWord"
     }
     ,
@@ -486,7 +564,7 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
                         if(i != rightSideSplitted.length - 1){
                             if(isTerminal(rightSideSplitted[i+1]))
                                 alternativePintSyntacticalError(rightSideSplitted[i+1])
-                            else 
+                            else
                                 alternativePintSyntacticalError(rules[j+1].prediction)
                             printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
                             //The last seen position here when an EOF is encountered is exactly the next one.
@@ -501,12 +579,12 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     }
 
     //Case no rule is matched
-    if(!matched){ 
+    if(!matched){
       var required = []
       for(let rule of rules){
             let rightSideSplitted = rule.rightSide.split(/\s/g);
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
-          required.push(rightSideSplitted[0]) 
+          required.push(rightSideSplitted[0])
       }
       alternativePintSyntacticalError(required)
       printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition);
@@ -536,7 +614,7 @@ function mainSyntactical(){
 //An alternative Function to print  syntactical error
 /*
     Falta ponerle que se imprima correctamente, con lexema, fila y columna
-    
+
     1)Falla en el caso cuando se espera más de un token:
 
     por ejemplo "( id "
@@ -592,7 +670,7 @@ function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosit
   if(!error_printed)
       error_printed = true
       console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
-    
+
 }
 
 //Function to add text to output accordingly to expected syntax
@@ -780,7 +858,7 @@ function splitWithIndex(line){
 
 //Function that prints the token
 function print(token, word, column, row){
-    var currentToken = {name: token.name, lexeme: word, row: row, column: column}  
+    var currentToken = {name: token.name, lexeme: word, row: row, column: column}
 
     if (token.print == "onlyWord"){
         partial_lexical_analysis = "<" + word + "," + row + "," + column + ">\n";
@@ -791,8 +869,8 @@ function print(token, word, column, row){
     else if (token.print == "wordAndToken")
         partial_lexical_analysis = "<" + token.name + "," + word + "," + row + "," + column + ">\n";
 
-      
-    
+
+
     testWTA.push(currentToken)
     lexical_analysis += partial_lexical_analysis
 }
