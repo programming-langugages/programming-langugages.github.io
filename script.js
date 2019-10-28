@@ -14,7 +14,7 @@ RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY |   epsilon
 RESOURCE_BODY -> resource id RESOURCE_BODY'
 RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART end | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART end
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
-INTERFACE_PART -> CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | STATEMENTS
+INTERFACE_PART -> CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | SEQUENTIAL_STATEMENT
 
 
 
@@ -48,7 +48,7 @@ EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
 EXPRESSION_VARIABLE ->  epsilon | tk_asignación ARITHMETHIC_EXPRESSION
 
 STATEMENTS -> STATEMENT STATEMENTS
-STATEMENT -> SEQUENTIAL_STATEMENT | epsilon
+STATEMENT -> SEQUENTIAL_STATEMENT
 SEQUENTIAL_STATEMENT -> skip
 SEQUENTIAL_STATEMENT -> VARIABLE_DECLARATION | IDS_GROUP tk_asignacion ARITHMETHIC_EXPRESSION
 SEQUENTIAL_STATEMENT -> VARIABLE_INSTANCE tk_suma tk_suma | VARIABLE tk_menos tk_menos
@@ -322,9 +322,6 @@ var partial_lexical_analysis;
 var currentTokenPosition = 0;
 var wordsToAnalyse = []
 var testWTA = []
-var EOFlastSeenRightSide;
-var EOFlastSeenLeftSide;
-var EOFlastPosition;
 
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
 
@@ -361,11 +358,7 @@ var syntacticColumn;
 var syntacticRow;
 var error_printed;
 function syntacticalAnalyzer(){
-    primeros = {}
-    siguientes = {}
-    prediccion = []
-    prediccionDebug = [] //Beutiful console debug
-    error_printed = false;
+    clearAll()
     lexicalAnalyzer(); //Load tokens
     generateGrammar();
     generatePrimeros();
@@ -542,9 +535,6 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
             let rightSideSplitted = rule.rightSide.split(/\s/g);
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
             for(let i=0; i<rightSideSplitted.length;i++){
-              EOFlastSeenRightSide = rightSideSplitted;
-              EOFlastSeenLeftSide = lastLeftSide;
-              EOFlastPosition = i;
                 let alpha = rightSideSplitted[i]
                 if(!isTerminal(alpha)){
                     let option = genericAnalyze(alpha, lastLeftSide, rightSideSplitted, i);
@@ -554,21 +544,21 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
                         return 'continue';
                     }
                     else if (token.name != alpha) {
-                        alternativePintSyntacticalError(alpha)
-                        printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
+                        alternativePintSyntacticalError(token.lexeme, alpha, "onlyToken")
+                        error_printed = true
+                        console.log("RULE WHERE FALLO", rule)
                         return 'stop';
                     }
                     token = getNextToken(wordsToAnalyse);
-                    if(token != 'EOF') syntacticColumn = token.column;  // Updating the row of the analysis. Add 1 if couting whitespaces
-                    if(token == 'EOF'){
+                    if(token.name != 'EOF') syntacticColumn = token.column;  // Updating the row of the analysis. Add 1 if couting whitespaces
+                    if(token.name == 'EOF'){
                         if(i != rightSideSplitted.length - 1){
                             if(isTerminal(rightSideSplitted[i+1]))
-                                alternativePintSyntacticalError(rightSideSplitted[i+1])
+                                alternativePintSyntacticalError(token.lexeme, rightSideSplitted[i+1], "printOnlyToken")
                             else
-                                alternativePintSyntacticalError(rules[j+1].prediction)
-                            printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
-                            //The last seen position here when an EOF is encountered is exactly the next one.
-                            EOFlastPosition +=  1;
+                                alternativePintSyntacticalError(token.lexeme, rightSideSplitted[i+1], "printAllPrediction")
+                            console.log("RULE WHERE FALLO", rule)
+                            error_printed = true;
                             return 'stop';
                         }
                         return 'continue';
@@ -580,17 +570,8 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
 
     //Case no rule is matched
     if(!matched){
-      var required = []
-      for(let rule of rules){
-            let rightSideSplitted = rule.rightSide.split(/\s/g);
-            rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
-          required.push(rightSideSplitted[0])
-      }
-      alternativePintSyntacticalError(required)
-      printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition);
-      EOFlastSeenRightSide = lastRightSide;
-      EOFlastSeenLeftSide = lastLeftSide;
-      EOFlastPosition = lastSeenPosition;
+      alternativePintSyntacticalError(token.lexeme, noTerminal, "printAllPrediction")
+      error_printed = true;
       return 'stop';
     }
 }
@@ -601,9 +582,10 @@ function mainSyntactical(){
     token =  getNextToken(wordsToAnalyse) //First token
     syntacticColumn = 0; syntacticRow = 0;
     var result = genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
-    if(token != 'EOF' || result == 'stop')
-        printSyntacticalError(token, EOFlastSeenLeftSide, EOFlastSeenRightSide, EOFlastPosition);
-    else console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
+    if(token.name != 'EOF' && !error_printed)
+        alternativePintSyntacticalError(token.lexeme, 'EOF', 'onlyToken')
+    else if (result != "stop")
+      console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
 }
 
 ////// PUEDE INTENTAR ARREGLAR LA FUNCIÓN ALTERNATIVA, QUE FUNCIONA CON SOLO UNA LINEA Y NO USA EOFlastSeenLeftSide, NI NIGUNO DE ESOS, QUE PARA MANTENIBILIDAD DEL CODIGO ES MEJOR
@@ -625,8 +607,15 @@ function mainSyntactical(){
     Debe salir: se esperaba ",", ")"
     está saliendo se esperaba ")"
 */
-function alternativePintSyntacticalError(tokenEsperado){
-    console.error('Se esperaba', tokenEsperado)
+function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
+    if(modePrint == "printAllPrediction"){
+      var rules = prediccion.filter((item,index)=>item["leftSide"]==tokenExpected) //Get all rules of that no terminal
+      tokenExpected =  []
+      for(rule of rules){
+        tokenExpected.push(rule.prediction[0])
+      }
+    }
+    console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected);
 }
 
 
@@ -687,8 +676,8 @@ function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFro
     //If is not terminal it must be added all the no terminals from primeros set
     else {
       if(!isTerminal(currentAlpha)){
-        for (let x = 0; x < primeros[currentAlpha].length ; x++){
-          var currentPrimero = primeros[currentAlpha][x];
+        for (let x = 0; x < prediccion[currentAlpha].length ; x++){
+          var currentPrimero = prediccion[currentAlpha][x];
           // Check better what to do with epsilons
           if(currentPrimero == 'epsilon') continue;
           //expected += "\"";
@@ -725,7 +714,7 @@ function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFro
 function getNextToken(wordsToAnalyse){
   //If position is not passed to the function, it takes the next token
     if(wordsToAnalyse.length == currentTokenPosition)
-        return 'EOF'
+        return {name: 'EOF', lexeme: 'EOF'}
     var nextToken;
     nextToken = wordsToAnalyse[currentTokenPosition];
     currentTokenPosition += 1;
@@ -881,4 +870,12 @@ function clearAll(){
     console.log("Clearing")
     wordsToAnalyse = []
     $('#result').html('')
+    testWTA = []
+    grammar = {}
+    primeros = {}
+    siguientes = {}
+    prediccion = []
+    prediccionDebug = [] //Beutiful console debug
+    currentTokenPosition = 0;
+    error_printed = false;
 }
