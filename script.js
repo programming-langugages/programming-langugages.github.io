@@ -1,10 +1,8 @@
 // Grammar
 var inputGrammar =
-`function -> tk_par_izq parameter tk_par_der
-parameter -> id parameter'
-parameter -> epsilon
-parameter' -> tk_coma id parameter'
-parameter' -> epsilon
+`GLOBAL -> global id GLOBAL_BODY end
+GLOBAL_BODY ->  CONSTANT_DECLARATION | ε
+CONSTANT_DECLARATION -> const id tk_igual tk_num
 `
 
 
@@ -12,8 +10,8 @@ parameter' -> epsilon
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|body|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
-        softRegex: /^(global|body|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)/,
+        hardRegex: /^(global|body|const|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
+        softRegex: /^(global|body|const|create|receive|destroy|external|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)/,
         print: "onlyWord"
     }
     ,
@@ -245,6 +243,7 @@ var lexical_analysis;
 var partial_lexical_analysis;
 var currentTokenPosition = 0;
 var wordsToAnalyse = []
+var testWTA = []
 var EOFlastSeenRightSide;
 var EOFlastSeenLeftSide;
 var EOFlastPosition;
@@ -282,12 +281,14 @@ var prediccion;
 var prediccionDebug; //Beautiful console debug, not that beautiful but useful though.
 var syntacticColumn;
 var syntacticRow;
+var error_printed;
 function syntacticalAnalyzer(){
     primeros = {}
     siguientes = {}
     prediccion = []
     prediccionDebug = [] //Beutiful console debug
-    lexicalAnalyzer(true); //Load tokens
+    error_printed = false;
+    lexicalAnalyzer(); //Load tokens
     generateGrammar();
     generatePrimeros();
     generateSiguientes();
@@ -456,7 +457,8 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     var matched = false;
     var rules = prediccion.filter((item,index)=>item["leftSide"]==noTerminal) //Get all rules of that no terminal
     var lastLeftSide = noTerminal;
-    for(let rule of rules){
+    for(let j=0; j<rules.length;j++){
+        let rule = rules[j]
         if(rule.prediction.includes(token.name)){ //If that token exists in prediccion
             matched = true;
             let rightSideSplitted = rule.rightSide.split(/\s/g);
@@ -466,13 +468,6 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
               EOFlastSeenLeftSide = lastLeftSide;
               EOFlastPosition = i;
                 let alpha = rightSideSplitted[i]
-                // console.log("xxxxxxxxxx");
-                // console.log(wordsToAnalyse);
-                // console.log(alpha);
-                // console.log(token);
-                // console.log(rule);
-                // console.log(rule.rightSide);
-                // console.log("xx");
                 if(!isTerminal(alpha)){
                     let option = genericAnalyze(alpha, lastLeftSide, rightSideSplitted, i);
                     if(option == 'stop') return 'stop'; //If there is an error we need to stop the algorithm
@@ -481,6 +476,7 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
                         return 'continue';
                     }
                     else if (token.name != alpha) {
+                        alternativePintSyntacticalError(alpha)
                         printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
                         return 'stop';
                     }
@@ -488,6 +484,10 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
                     if(token != 'EOF') syntacticColumn = token.column;  // Updating the row of the analysis. Add 1 if couting whitespaces
                     if(token == 'EOF'){
                         if(i != rightSideSplitted.length - 1){
+                            if(isTerminal(rightSideSplitted[i+1]))
+                                alternativePintSyntacticalError(rightSideSplitted[i+1])
+                            else 
+                                alternativePintSyntacticalError(rules[j+1].prediction)
                             printSyntacticalError(token, lastLeftSide, rightSideSplitted, i);
                             //The last seen position here when an EOF is encountered is exactly the next one.
                             EOFlastPosition +=  1;
@@ -501,7 +501,14 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     }
 
     //Case no rule is matched
-    if(!matched){
+    if(!matched){ 
+      var required = []
+      for(let rule of rules){
+            let rightSideSplitted = rule.rightSide.split(/\s/g);
+            rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
+          required.push(rightSideSplitted[0]) 
+      }
+      alternativePintSyntacticalError(required)
       printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition);
       EOFlastSeenRightSide = lastRightSide;
       EOFlastSeenLeftSide = lastLeftSide;
@@ -512,8 +519,8 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
 
 function mainSyntactical(){
     wordsToAnalyse = []
-    wordsToAnalyse = populateWordsToAnalyse();
-    token =  getNextToken(wordsToAnalyse, 0) //First token
+    wordsToAnalyse = testWTA;
+    token =  getNextToken(wordsToAnalyse) //First token
     syntacticColumn = 0; syntacticRow = 0;
     var result = genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
     if(token != 'EOF' || result == 'stop')
@@ -521,7 +528,57 @@ function mainSyntactical(){
     else console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
 }
 
+////// PUEDE INTENTAR ARREGLAR LA FUNCIÓN ALTERNATIVA, QUE FUNCIONA CON SOLO UNA LINEA Y NO USA EOFlastSeenLeftSide, NI NIGUNO DE ESOS, QUE PARA MANTENIBILIDAD DEL CODIGO ES MEJOR
+///// O PUEDE INTENTAR ARREGLAR LAS DOS FUNCIONES QUE USTED HIZO PARA IMPRIMIR EL ERROR, FUNCIONES QUE PUEDE QUE NO ESTÉN MAL PERO NO ES LO QUE NOS ESTÁN PIDIENDO, ESAS FUNCIONES ESTÁN CALCULANDO
+// TODA LA SECUENCIA DE TOKENS ESPERADOS, PRIMERO "(", LUEGO "ID", LUEGO ")", Y SOLO NOS PIDEN LOS TOKENS ESPERADOS INMEDIATAMENTE "("
+// PERO LA VERDAD YA ME LA HUEVO, USTED VERÁ
+
+//An alternative Function to print  syntactical error
+/*
+    Falta ponerle que se imprima correctamente, con lexema, fila y columna
+    
+    1)Falla en el caso cuando se espera más de un token:
+
+    por ejemplo "( id "
+    Debe salir: se esperaba ")", ","
+    está saliendo: se esperaba ")"
+
+    por ejemplo "(id id)"
+    Debe salir: se esperaba ",", ")"
+    está saliendo se esperaba ")"
+*/
+function alternativePintSyntacticalError(tokenEsperado){
+    console.error('Se esperaba', tokenEsperado)
+}
+
+
 //Function to print a syntacticalError
+/*
+    Imprime varias veces el error, toca poner una flag pero no sé si es lo indicado
+
+    1) Falla en el caso cuando se espera más de un token:
+
+    por ejemplo "( id "
+    Debe salir: se esperaba ")", ","
+    está saliendo: se esperaba "id", ","
+
+    por ejemplo "(id id)"
+    Debe salir: se esperaba ",", ")"
+    está saliendo se esperaba ""
+
+    2) Falla en el caso cuando el input está vacio:
+
+    por ejemplo ""
+    Debe salir: se esperaba "(" -> ya que es la única manera en la que puede empezar la gramatica
+    está saliendo: se esperaba "(", "id", ")" -> efectivamente se espera la cadena un "(", luego un id, y luego un ")"
+        Sin embargo el taller no nos pide imprimir todos los tokens que se esperen inmediatamente, en este caso solo se espera "(""
+
+    3) Falla en el caso cuando se espera SOLO  un token:
+
+    por ejemplo "( id ,"
+    Debe salir: se esperaba "id"
+    está saliendo: se esperaba ",", "id", ","
+*/
 function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition){
   if(!lastRightSide){
     lastRightSide = grammar[Object.keys(grammar)[0]];
@@ -532,11 +589,15 @@ function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosit
   }
   if(!token.name) var tokenFound = "fin de archivo";
   else var tokenFound = token.lexeme.toString();
-  console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
+  if(!error_printed)
+      error_printed = true
+      console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
+    
 }
 
 //Function to add text to output accordingly to expected syntax
 function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFromPosition){
+  console.log(leftSideRule, rightSideRule, expectedFromPosition)
   var expected = "";
 
   //Build from the part of the expected rule all the tokens that were missing
@@ -583,28 +644,14 @@ function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFro
 
 //Function to get next token
 
-function getNextToken(wordsToAnalyse, position){
+function getNextToken(wordsToAnalyse){
   //If position is not passed to the function, it takes the next token
-  if(!position) position = currentTokenPosition;
-  else currentTokenPosition = position;
-    if(wordsToAnalyse.length == position)
+    if(wordsToAnalyse.length == currentTokenPosition)
         return 'EOF'
-    // ----------- GET NEXT TOKEN FOR TEST
-    // var aux = wordsToAnalyse.shift()
-    // syntacticRow = aux.row;
-    // token = {name: aux.word.name}
-    //return token
-    //----------- REAL NEXT TOKEN
     var nextToken;
-    nextToken = wordsToAnalyse[position];
+    nextToken = wordsToAnalyse[currentTokenPosition];
     currentTokenPosition += 1;
     syntacticRow = nextToken.row;
-    //console.log(findToken(token.word, token.row));
-    var nextTokenString = "<" + nextToken.name + ", \"" + nextToken.lexeme + "\", " + nextToken.row + ", " + nextToken.column + ">\n";
-    $('#result').append(nextTokenString.replace(/&/g, '&amp;')
-                                        .replace(/>/g, '&gt;')
-                                        .replace(/</g, '&lt;')
-                                        .replace(/\n/g,'<br/>'))
     return nextToken;
 }
 
@@ -612,73 +659,36 @@ function getNextToken(wordsToAnalyse, position){
 //  -------------------------------------------------------------------------- LEXICAL ANALYZER --------------------------------------------------------------------------
 
 //Function that splits the code by breaklines and spaces to obtain the WORD
-function lexicalAnalyzer(only_load, input) {
+function lexicalAnalyzer() {
     lexical_analysis = "";
     var code;
-    if (!input)
-        code = document.getElementById("codeTextArea").value;
-    else
-        code = input;
+    code = document.getElementById("codeTextArea").value;
     var lines = code.split(/\n/);
     for(var i = 0; i < lines.length; i++){
         var line = lines[i].replace(commentRegex, '');
         var words = splitWithIndex(line)
         for(let word of words){
             if(word.name != ""){
-                // This is now commented because for getting the next token we are taking the output of the lexical analysis
-                //if(!only_load){ //Sometimes we only need to load all the words but no do the analysis
-                    findToken(word, i+1)
-                    if(partial_lexical_analysis.match(/Error lexico/)){
-                        i = Number.MAX_SAFE_INTEGER //Force break of two loops
-                        break;
-                    }
-                //}
+                findToken(word, i+1)
+                if(partial_lexical_analysis.match(/Error lexico/)){
+                    i = Number.MAX_SAFE_INTEGER //Force break of two loops
+                    break;
+                }
                 wordsToAnalyse.push({word:word, row: i+1})
-
             }
         }
     }
-    if(!only_load){
-        console.log(lexical_analysis)
-        $('#result').html(lexical_analysis.replace(/&/g, '&amp;')
-                                        .replace(/>/g, '&gt;')
-                                        .replace(/</g, '&lt;')
-                                        .replace(/\n/g,'<br/>'))
+    console.log(lexical_analysis)
+    $('#result').html(lexical_analysis.replace(/&/g, '&amp;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/\n/g,'<br/>'))
 
-    }
     return lexical_analysis;
 }
 
 // Function to populate dictionary to input to the function getNextToken
 // This function gets the lexeme of a token and transform the lexical_analysis into an usable dictionary
-
-function populateWordsToAnalyse() {
-    var currentName; var currentRow; var currentColumn; var currentLexeme;
-    var result = [];
-    var lines = lexical_analysis.split(/\n/);
-    for(var i = 0; i < lines.length; i++){
-        var line = lines[i].replace(/>/, '');
-        line = line.replace(/</, '');
-        var words = line.split(/,/g);
-        if(words.length == 3){ // If the token does not print the lexeme
-          currentName = getTokenNameAndLexemeByWord(words[0])["name"];
-          currentLexeme = getTokenNameAndLexemeByWord(words[0])["lexeme"];
-          currentRow = words[1];
-          currentColumn = words[2];
-        } else if(words.length == 4){
-          currentName = words[0];
-          currentLexeme = words[1];
-          currentRow = words[2];
-          currentColumn = words[3];
-        }
-        currentRow = parseInt(currentRow);
-        currentColumn = parseInt(currentColumn);
-        result.push({name: currentName, lexeme: currentLexeme, row: currentRow, column: currentColumn});
-    }
-    //Unexpected behavior, if the last token is failing probably this line has to be removed
-    result.pop();
-    return result;
-}
 
 
 function getTokenNameAndLexemeByWord(word){
@@ -770,14 +780,20 @@ function splitWithIndex(line){
 
 //Function that prints the token
 function print(token, word, column, row){
-    currentToken = {name: token.name, lexema: word, row: row, column: column}
-    if (token.print == "onlyWord")
+    var currentToken = {name: token.name, lexeme: word, row: row, column: column}  
+
+    if (token.print == "onlyWord"){
         partial_lexical_analysis = "<" + word + "," + row + "," + column + ">\n";
+        currentToken.name = word
+    }
     else if (token.print == "onlyToken")
         partial_lexical_analysis =  "<" + token.name + "," + row + "," + column + ">\n";
     else if (token.print == "wordAndToken")
         partial_lexical_analysis = "<" + token.name + "," + word + "," + row + "," + column + ">\n";
 
+      
+    
+    testWTA.push(currentToken)
     lexical_analysis += partial_lexical_analysis
 }
 
