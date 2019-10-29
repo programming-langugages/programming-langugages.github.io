@@ -12,9 +12,17 @@ var inputGrammar =
 RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
 
 RESOURCE_BODY -> resource id RESOURCE_BODY' end
-RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART  | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART
+RESOURCE_BODY' ->  BLOCK  | tk_par_izq tk_par_der BLOCK
+
+
+BLOCK -> INTERFACE_PART INTERFACES_PART | CONDITIONAL_STATEMENT
+
+
+
+
+
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
-INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION
+INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION | CONDITIONAL_STATEMENT
 INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION
 INTERFACE_PART ->  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT | PRIMITIVE_FUNCTION | BODY_DECLARATION
 
@@ -29,8 +37,12 @@ IMPORT_SPECIFICATION -> import IDS_GROUP
 OPERATION_DECLARATION ->  op id PARAMETER OPERATION_END
 TYPE_DECLARATION -> type id tk_igual rec par_izq TYPE_SPECIFICATION par_der
 EXTEND_DECLARATION -> extend IDS_GROUP
-
-
+CONDITIONAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_IF
+CONDITIONAL_STATEMENT -> do BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_DO
+CONDITIONAL_STATEMENT -> fs QUANTIFIER tk_ejecuta BLOCK END_FS
+END_IF -> tk_separa fi | fi
+END_DO -> tk_separa od | od
+END_DO -> tk_separa af | af
 
 
 
@@ -45,16 +57,21 @@ TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE  |  id tk_dos_puntos id VAR_T
 
 EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
 
+
 BODY_DECLARATION -> body id
 
-PRIMITIVE_FUNCTION -> FUNCTION_ONE_PARAMETER | FUNCTION_TWO_PARAMETER
-FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE1 tk_par_izq F1P_PARAMETER tk_par_der | F1P_RESERVED_WORD_TYPE2 tk_par_izq VAR_TYPE tk_par_der |  F1P_RESERVED_WORD_TYPE3 tk_par_izq id tk_par_der
+PRIMITIVE_FUNCTION -> FUNCTION_ONE_PARAMETER | FUNCTION_TWO_PARAMETER | FUNCTION_N_PARAMETERS
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE1 tk_par_izq F1P_PARAMETER tk_par_der
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE2 tk_par_izq VAR_TYPE tk_par_der
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE3 tk_par_izq id tk_par_der
 FUNCTION_TWO_PARAMETER -> F2P_RESERVED_WORD tk_par_izq id F2P_PARAMETER tk_par_der
-F1P_RESERVED_WORD_TYPE1 -> abs | pred | succ
-F1P_RESERVED_WORD_TYPE2 -> low | high | new
-F1P_RESERVED_WORD_TYPE3 -> length | maxlength
-F1P_PARAMETER -> id | tk_num
+FUNCTION_N_PARAMETERS -> FNP_RESERVED_WORD_TYPE_1 tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
+F1P_RESERVED_WORD_TYPE1 -> abs | pred | succ # Id / numbers
+F1P_RESERVED_WORD_TYPE2 -> low | high | new # types
+F1P_RESERVED_WORD_TYPE3 -> length | maxlength # ids
+F1P_PARAMETER -> VARIABLE_INSTANCE | tk_num
 F2P_RESERVED_WORD -> ub | lb
+FNP_RESERVED_WORD_TYPE_1 -> write
 F2P_PARAMETER -> tk_coma tk_num | epsilon
 
 
@@ -69,19 +86,19 @@ SEQUENTIAL_STATEMENT -> VARIABLE_INSTANCE
 
 
 
-SEQUENTIAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK tk_separa fi
-SEQUENTIAL_STATEMENT -> do BOOLEAN_EXPRESSION tk_ejecuta tk_separa od
-SEQUENTIAL_STATEMENT -> fs QUANTIFIER tk_ejecuta BLOCK af
 
 
 
 
 
 
-
+BOOLEAN_EXPRESSION -> tk_par_izq TERM OP_BINARIO_BOOLEAN TERM BOOLEAN_EXPRESSION'
+BOOLEAN_EXPRESSION -> TERM OP_BINARIO_BOOLEAN TERM BOOLEAN_EXPRESSION''
+BOOLEAN_EXPRESSION' -> OP_BINARIO_BOOLEAN TERM tk_par_der | tk_par_der
+BOOLEAN_EXPRESSION'' -> OP_BINARIO_BOOLEAN TERM | epsilon
 
 VARIABLE_INSTANCE -> id VARIABLE_INSTANCE'
-VARIABLE_INSTANCE' -> tk_punto id | epsilon | tk_suma tk_suma | tk_suma tk_suma
+VARIABLE_INSTANCE' -> tk_punto id | epsilon | tk_menos tk_menos | tk_suma tk_suma
 VARIABLE_INSTANCE' -> tk_coma IDS_GROUP
 VARIABLE_INSTANCE' -> tk_asig VARIABLE_INSTANCE'' |  CALL_FUNCTION
 VARIABLE_INSTANCE'' -> ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS | CALL_FUNCTION
@@ -91,11 +108,12 @@ ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der | 
 ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
 TERM -> PARAMETER_CALL_FUNCTION | tk_num
 
+
 VARIABLE_INSTANCE2 -> id VARIABLE_INSTANCE2'
-VARIABLE_INSTANCE2' -> tk_punto id VARIABLE_INSTANCE2 | epsilon |
+VARIABLE_INSTANCE2' -> tk_punto id VARIABLE_INSTANCE2 | epsilon
 
 OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi
-
+OP_BINARIO_BOOLEAN -> tk_distinto | tk_menorque | tk_mayorque  | tk_igual | tk_menorque tk_igual | tk_mayorque tk_igual
 
 CALL_FUNCTION ->  tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
 
@@ -136,8 +154,8 @@ IDS_GROUP_0' -> tk_coma IDS_GROUP_0 | epsilon
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|double|body|const|create|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)$/,
-        softRegex: /^(global|double|body|const|create|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)/,
+        hardRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)$/,
+        softRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)/,
         print: "onlyWord"
     }
     ,
@@ -380,6 +398,8 @@ function generateGrammar(){
     var lines = inputGrammar.match(/[^\r\n]+/g);
     var derivations;
     for(let line of lines){
+      line = line.replace(commentRegex, '');
+      line = line.replace(/^#(.)*/g, '')
       derivations = [];
       var matched = line.split(/->/g);
       var leftSideRule = matched[0];
@@ -627,6 +647,7 @@ function mainSyntactical(){
     if(token.name != 'EOF' && !error_printed)
         alternativePintSyntacticalError(token.lexeme, 'EOF', 'onlyToken')
     else if (result != "stop"){
+        $('#result').prepend("<p class='successMessage'>El analisis sintactico ha finalizado exitosamente</p>")
         $('#result').append("<p class='successMessage'>El analisis sintactico ha finalizado exitosamente</p>")
         console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
     }
@@ -656,17 +677,21 @@ function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
     if(!matchedTheFirstTime){
         console.log("Falta funcion_principal")
         $('#result').append("<p class='errorMessage'>Falta funcion_principal</p>")
+        $('#result').prepend("<p class='errorMessage'>Falta funcion_principal</p>")
         return ;
     }
     if(modePrint == "printAllPrediction"){
       var rules = prediccion.filter((item,index)=>item["leftSide"]==tokenExpected) //Get all rules of that no terminal
       tokenExpected =  []
       for(rule of rules){
+
         tokenExpected.push(getTokenLexemeByWord(rule.prediction[0]))
+
       }
     }else
         tokenExpected = getTokenLexemeByWord(tokenExpected)
     $('#result').append("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
+    $('#result').prepend("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
     console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected);
 }
 
