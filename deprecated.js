@@ -260,3 +260,91 @@ console.log(lexicalAnalyzer(input1))
 
   }
 }
+
+//Function to print a syntacticalError
+/*
+    Imprime varias veces el error, toca poner una flag pero no sé si es lo indicado
+
+    1) Falla en el caso cuando se espera más de un token:
+
+    por ejemplo "( id "
+    Debe salir: se esperaba ")", ","
+    está saliendo: se esperaba "id", ","
+
+    por ejemplo "(id id)"
+    Debe salir: se esperaba ",", ")"
+    está saliendo se esperaba ""
+
+    2) Falla en el caso cuando el input está vacio:
+
+    por ejemplo ""
+    Debe salir: se esperaba "(" -> ya que es la única manera en la que puede empezar la gramatica
+    está saliendo: se esperaba "(", "id", ")" -> efectivamente se espera la cadena un "(", luego un id, y luego un ")"
+        Sin embargo el taller no nos pide imprimir todos los tokens que se esperen inmediatamente, en este caso solo se espera "(""
+
+    3) Falla en el caso cuando se espera SOLO  un token:
+
+    por ejemplo "( id ,"
+    Debe salir: se esperaba "id"
+    está saliendo: se esperaba ",", "id", ","
+*/
+function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition){
+    if(!lastRightSide){
+      lastRightSide = grammar[Object.keys(grammar)[0]];
+      lastSeenPosition = 0;
+    }
+    if(!lastLeftSide){
+      lastLeftSide = Object.keys(grammar)[0];
+    }
+    if(!token.name) var tokenFound = "fin de archivo";
+    else var tokenFound = token.lexeme.toString();
+    if(!error_printed)
+        error_printed = true
+        console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
+  
+  }
+  
+  //Function to add text to output accordingly to expected syntax
+  function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFromPosition){
+    console.log(leftSideRule, rightSideRule, expectedFromPosition)
+    var expected = "";
+  
+    //Build from the part of the expected rule all the tokens that were missing
+    for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
+      var currentAlpha = rightSideRule[i];
+      var derivationsOfAlpha = currentAlpha.split(/\s/g);
+      if(derivationsOfAlpha.length > 1)
+        expected += addMissingFromExpectedFromRule(leftSideRule, derivationsOfAlpha, 0);
+      //If is not terminal it must be added all the no terminals from primeros set
+      else {
+        if(!isTerminal(currentAlpha)){
+          for (let x = 0; x < prediccion[currentAlpha].length ; x++){
+            var currentPrimero = prediccion[currentAlpha][x];
+            // Check better what to do with epsilons
+            if(currentPrimero == 'epsilon') continue;
+            //expected += "\"";
+            var derivationsOfPrimero = currentPrimero.split(/\s/g);
+            if(derivationsOfPrimero.length > 1){
+              for(let j = 0; j < derivationsOfPrimero.length; j ++ ){
+                expected += "\"";
+                expected += getTokenNameAndLexemeByWord(derivationsOfPrimero[j])["lexeme"];
+                if (!j == derivationsOfPrimero.length - 1) expected += "\",";
+              }
+            } else {
+              expected += "\"";
+              expected += getTokenNameAndLexemeByWord(currentPrimero)["lexeme"];
+            }
+  
+            if (i == rightSideRule.length - 1 && x == primeros[currentAlpha].length - 1) expected += "\"";
+            else expected += "\",";
+          }
+        } else {
+          expected += "\"";
+          expected += getTokenNameAndLexemeByWord(rightSideRule[i].toString())["lexeme"];
+          if (i == rightSideRule.length - 1) expected += "\"";
+          else expected += "\",";
+        }
+      }
+    }
+    return expected;
+  }

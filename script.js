@@ -6,7 +6,7 @@ var inputGrammar =
 
 //
 // `
-`SR_PROGRAM ->  RESOURCES_BODY
+`SR_PROGRAM ->  RESOURCE_BODY RESOURCES_BODY
 
 
 RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
@@ -322,7 +322,7 @@ var partial_lexical_analysis;
 var currentTokenPosition = 0;
 var wordsToAnalyse = []
 var testWTA = []
-
+var matchedTheFirstTime;
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
 
 
@@ -459,12 +459,10 @@ function generateSiguientesEachRule(ruleToGenerate){
 
 function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
     var tokens = rightSide.split(/\s/g);
-    // console.log("Right side: " + rightSide.toString() + " ruleToGenerate " + ruleToGenerate.toString());
     if(!isTerminal(leftSide)){
       for(let token of tokens){
         if(token == ruleToGenerate){
           var indexNextToken = tokens.indexOf(token) + 1;
-          // console.log(tokens[indexNextToken]);
           if(tokens[indexNextToken]){
 
             if(!isTerminal(tokens[indexNextToken])){
@@ -474,19 +472,13 @@ function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
                 aux.splice(epsilon_index, 1) //Removing epsilon of the copy
               }
               siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(aux);
-              // console.log(primeros[tokens[indexNextToken]]);
               if(primeros[tokens[indexNextToken]].includes('epsilon')){
-                  // console.log("1 Adding this to " + ruleToGenerate.toString());
-                  // console.log(siguientes[leftSide]);
                   siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(siguientes[leftSide]);
               }
             } else {
-              // console.log("2 Adding this " + tokens[indexNextToken].toString() + " to " + ruleToGenerate.toString());
               if(tokens[indexNextToken] != 'epsilon') siguientes[ruleToGenerate].push(tokens[indexNextToken]);
             }
           } else {
-            // console.log("3 Adding siguientes of left Side:  "  + leftSide + " to " + ruleToGenerate.toString() );
-            // console.log(siguientes[leftSide]);
             if(siguientes[leftSide]) siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(siguientes[leftSide])
           }
         }
@@ -532,6 +524,7 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
         let rule = rules[j]
         if(rule.prediction.includes(token.name)){ //If that token exists in prediccion
             matched = true;
+            matchedTheFirstTime = true;
             let rightSideSplitted = rule.rightSide.split(/\s/g);
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
             for(let i=0; i<rightSideSplitted.length;i++){
@@ -611,107 +604,44 @@ function mainSyntactical(){
     está saliendo se esperaba ")"
 */
 function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
+    if(!matchedTheFirstTime){
+        console.log("Falta funcion_principal")
+        $('#result').append("<p class='errorMessage'>Falta funcion_principal</p>")
+        return ;
+    }
     if(modePrint == "printAllPrediction"){
       var rules = prediccion.filter((item,index)=>item["leftSide"]==tokenExpected) //Get all rules of that no terminal
       tokenExpected =  []
       for(rule of rules){
-        tokenExpected.push(rule.prediction[0])
+        tokenExpected.push(getTokenLexemeByWord(rule.prediction[0]))
       }
-    }
+    }else
+        tokenExpected = getTokenLexemeByWord(tokenExpected) 
     $('#result').append("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
     console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected);
 }
 
 
-//Function to print a syntacticalError
-/*
-    Imprime varias veces el error, toca poner una flag pero no sé si es lo indicado
+  // Function to populate dictionary to input to the function getNextToken
+// This function gets the lexeme of a token and transform the lexical_analysis into an usable dictionary
 
-    1) Falla en el caso cuando se espera más de un token:
 
-    por ejemplo "( id "
-    Debe salir: se esperaba ")", ","
-    está saliendo: se esperaba "id", ","
-
-    por ejemplo "(id id)"
-    Debe salir: se esperaba ",", ")"
-    está saliendo se esperaba ""
-
-    2) Falla en el caso cuando el input está vacio:
-
-    por ejemplo ""
-    Debe salir: se esperaba "(" -> ya que es la única manera en la que puede empezar la gramatica
-    está saliendo: se esperaba "(", "id", ")" -> efectivamente se espera la cadena un "(", luego un id, y luego un ")"
-        Sin embargo el taller no nos pide imprimir todos los tokens que se esperen inmediatamente, en este caso solo se espera "(""
-
-    3) Falla en el caso cuando se espera SOLO  un token:
-
-    por ejemplo "( id ,"
-    Debe salir: se esperaba "id"
-    está saliendo: se esperaba ",", "id", ","
-*/
-function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition){
-  if(!lastRightSide){
-    lastRightSide = grammar[Object.keys(grammar)[0]];
-    lastSeenPosition = 0;
-  }
-  if(!lastLeftSide){
-    lastLeftSide = Object.keys(grammar)[0];
-  }
-  if(!token.name) var tokenFound = "fin de archivo";
-  else var tokenFound = token.lexeme.toString();
-  if(!error_printed)
-      error_printed = true
-      console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
-
-}
-
-//Function to add text to output accordingly to expected syntax
-function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFromPosition){
-  console.log(leftSideRule, rightSideRule, expectedFromPosition)
-  var expected = "";
-
-  //Build from the part of the expected rule all the tokens that were missing
-  for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
-    var currentAlpha = rightSideRule[i];
-    var derivationsOfAlpha = currentAlpha.split(/\s/g);
-    if(derivationsOfAlpha.length > 1)
-      expected += addMissingFromExpectedFromRule(leftSideRule, derivationsOfAlpha, 0);
-    //If is not terminal it must be added all the no terminals from primeros set
-    else {
-      if(!isTerminal(currentAlpha)){
-        for (let x = 0; x < prediccion[currentAlpha].length ; x++){
-          var currentPrimero = prediccion[currentAlpha][x];
-          // Check better what to do with epsilons
-          if(currentPrimero == 'epsilon') continue;
-          //expected += "\"";
-          var derivationsOfPrimero = currentPrimero.split(/\s/g);
-          if(derivationsOfPrimero.length > 1){
-            for(let j = 0; j < derivationsOfPrimero.length; j ++ ){
-              expected += "\"";
-              expected += getTokenNameAndLexemeByWord(derivationsOfPrimero[j])["lexeme"];
-              if (!j == derivationsOfPrimero.length - 1) expected += "\",";
-            }
-          } else {
-            expected += "\"";
-            expected += getTokenNameAndLexemeByWord(currentPrimero)["lexeme"];
-          }
-
-          if (i == rightSideRule.length - 1 && x == primeros[currentAlpha].length - 1) expected += "\"";
-          else expected += "\",";
-        }
-      } else {
-        expected += "\"";
-        expected += getTokenNameAndLexemeByWord(rightSideRule[i].toString())["lexeme"];
-        if (i == rightSideRule.length - 1) expected += "\"";
-        else expected += "\",";
+function getTokenLexemeByWord(word){
+    var currentLexeme;
+    for(let token of tokenList){
+      if(word.match(token.hardRegex) && token['name'] == 'reserved'){
+        currentLexeme = word;
+      } else if(token['name'] == word){
+        if(!token.lexeme) currentLexeme = word;
+        else currentLexeme = token.lexeme;
       }
     }
+    if(!currentLexeme){
+      currentLexeme = word;
+    }
+    return currentLexeme;
+    
   }
-  return expected;
-}
-
-
 
 //Function to get next token
 
@@ -757,29 +687,6 @@ function lexicalAnalyzer() {
     return lexical_analysis;
 }
 
-// Function to populate dictionary to input to the function getNextToken
-// This function gets the lexeme of a token and transform the lexical_analysis into an usable dictionary
-
-
-function getTokenNameAndLexemeByWord(word){
-  var currentName; var currentLexeme;
-  for(let token of tokenList){
-    if(word.match(token.hardRegex) && token['name'] == 'reserved'){
-      currentName = word;
-      currentLexeme = word;
-    } else if(token['name'] == word){
-      currentName = token.name;
-      if(!token.lexeme) currentLexeme = word;
-      else currentLexeme = token.lexeme;
-    }
-  }
-  if(!currentLexeme){
-    currentLexeme = word;
-    currentName = word;
-  }
-  return {name: currentName, lexeme: currentLexeme};
-
-}
 
 //Function that finds the token that matches that WORD, but only when it is an absolute match
 function findToken(word, row){
@@ -881,4 +788,5 @@ function clearAll(){
     prediccionDebug = [] //Beutiful console debug
     currentTokenPosition = 0;
     error_printed = false;
+    matchedTheFirstTime = false;
 }
