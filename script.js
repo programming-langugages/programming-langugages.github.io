@@ -9,12 +9,15 @@ var inputGrammar =
 `SR_PROGRAM ->  RESOURCE_BODY
 
 
-RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY |   epsilon
+RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
 
 RESOURCE_BODY -> resource id RESOURCE_BODY'
 RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART end | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART end
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
-INTERFACE_PART -> CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | SEQUENTIAL_STATEMENT
+INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION
+INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION |  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT
+
+
 
 
 
@@ -25,6 +28,10 @@ IMPORT_SPECIFICATION -> import IDS_GROUP
 OPERATION_DECLARATION ->  op id PARAMETER OPERATION_END
 TYPE_DECLARATION -> type id tk_igual rec par_izq TYPE_SPECIFICATION par_der
 EXTEND_DECLARATION -> extend IDS_GROUP
+
+
+
+
 
 
 
@@ -50,34 +57,68 @@ EXPRESSION_VARIABLE ->  epsilon | tk_asignación ARITHMETHIC_EXPRESSION
 STATEMENTS -> STATEMENT STATEMENTS
 STATEMENT -> SEQUENTIAL_STATEMENT
 SEQUENTIAL_STATEMENT -> skip
-SEQUENTIAL_STATEMENT -> VARIABLE_DECLARATION | IDS_GROUP tk_asignacion ARITHMETHIC_EXPRESSION
-SEQUENTIAL_STATEMENT -> VARIABLE_INSTANCE tk_suma tk_suma | VARIABLE tk_menos tk_menos
+SEQUENTIAL_STATEMENT -> VARIABLE_DECLARATION
+SEQUENTIAL_STATEMENT -> VARIABLE_INSTANCE
+
+
+
 SEQUENTIAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK tk_separa fi
 SEQUENTIAL_STATEMENT -> do BOOLEAN_EXPRESSION tk_ejecuta tk_separa od
 SEQUENTIAL_STATEMENT -> fs QUANTIFIER tk_ejecuta BLOCK af
 
 
-ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der | TERM ARITHMETHIC_EXPRESSIONS
-ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
-
-TERM -> VARIABLE_INSTANCE | tk_num
-OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi
 
 
-VARIABLES -> VARIABLES tk_coma | VARIABLE_DECLARATION |  epsilon
 
 
 
 
 VARIABLE_INSTANCE -> id VARIABLE_INSTANCE'
-VARIABLE_INSTANCE' -> tk_punto id | epsilon
+VARIABLE_INSTANCE' -> tk_punto id | epsilon | tk_suma tk_suma | tk_suma tk_suma
+VARIABLE_INSTANCE' -> tk_coma IDS_GROUP
+VARIABLE_INSTANCE' -> tk_asig VARIABLE_INSTANCE'' |  CALL_FUNCTION
+VARIABLE_INSTANCE'' -> ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS | CALL_FUNCTION
 
-VARIABLE_DECLARATION -> var IDS_GROUP
-VARIABLE -> id
+
+ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der | TERM ARITHMETHIC_EXPRESSIONS
+ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
+TERM -> PARAMETER_CALL_FUNCTION | tk_num
+
+VARIABLE_INSTANCE2 -> id VARIABLE_INSTANCE2'
+VARIABLE_INSTANCE2' -> tk_punto id VARIABLE_INSTANCE2 | epsilon |
+
+OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi
+
+
+CALL_FUNCTION ->  tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
+
+
+
+PARAMETER_CALL_FUNCTION -> id PARAMETER_CALL_FUNCTION'' | epsilon
+PARAMETER_CALL_FUNCTION'' -> PARAMETER_CALL_FUNCTION' | tk_punto id PARAMETER_CALL_FUNCTION' | epsilon
+PARAMETER_CALL_FUNCTION' -> tk_coma PARAMETER_CALL_FUNCTION | epsilon
+
+VARIABLE_DECLARATION -> var id VARIABLE_DECLARATION'
+VARIABLE_DECLARATION' -> tk_dos_puntos VAR_TYPE IDS_TYPE_GROUP'
+VARIABLE_DECLARATION' -> IDS_GROUP' VARIABLE_DECLARATION''
+
+VARIABLE_DECLARATION'' -> tk_dos_puntos VAR_TYPE
+VARIABLE_DECLARATION'' -> epsilon
+
+
+
 
 VAR_TYPE -> int | cap | double | char
+
+IDS_TYPE_GROUP -> id tk_dos_puntos VAR_TYPE IDS_TYPE_GROUP'
+IDS_TYPE_GROUP' -> tk_coma IDS_TYPE_GROUP | epsilon
+
 IDS_GROUP -> id IDS_GROUP'
-IDS_GROUP' -> tk_coma IDS_GROUP' | epsilon
+IDS_GROUP' -> tk_coma IDS_GROUP | epsilon
+
+IDS_GROUP_0 -> id IDS_GROUP_0' | epsilon
+IDS_GROUP_0' -> tk_coma IDS_GROUP_0 | epsilon
+
 
 
 `
@@ -524,7 +565,7 @@ function generatePrediccion(){
 }
 
 //Bota tres mensajes de error
-function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
+function genericAnalyze(noTerminal, lastLeftSide, lastRightSide, lastSeenPosition){
     var matched = false;
     var rules = prediccion.filter((item,index)=>item["leftSide"]==noTerminal) //Get all rules of that no terminal
     var lastLeftSide = noTerminal;
@@ -571,6 +612,7 @@ function genericAnalyze(noTerminal, lastRightSide, lastSeenPosition){
     //Case no rule is matched
     if(!matched){
       alternativePintSyntacticalError(token.lexeme, noTerminal, "printAllPrediction")
+      console.log("RULE WHERE FALLO", lastRightSide)
       error_printed = true;
       return 'stop';
     }
