@@ -14,7 +14,7 @@ RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
 RESOURCE_BODY -> resource id RESOURCE_BODY' end
 RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART  | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
-INTERFACE_PART -> CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | SEQUENTIAL_STATEMENT
+INTERFACE_PART -> PRIMITIVE_FUNCTION | BODY_DECLARATION  | CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | SEQUENTIAL_STATEMENT
 
 
 
@@ -37,11 +37,17 @@ TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE  |  id tk_dos_puntos id VAR_T
 
 EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
 
+BODY_DECLARATION -> body id
 
-
-
-
-
+PRIMITIVE_FUNCTION -> FUNCTION_ONE_PARAMETER | FUNCTION_TWO_PARAMETER 
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE1 tk_par_izq F1P_PARAMETER tk_par_der | F1P_RESERVED_WORD_TYPE2 tk_par_izq VAR_TYPE tk_par_der |  F1P_RESERVED_WORD_TYPE3 tk_par_izq id tk_par_der
+FUNCTION_TWO_PARAMETER -> F2P_RESERVED_WORD tk_par_izq id F2P_PARAMETER tk_par_der
+F1P_RESERVED_WORD_TYPE1 -> abs | pred | succ
+F1P_RESERVED_WORD_TYPE2 -> low | high | new
+F1P_RESERVED_WORD_TYPE3 -> length | maxlength
+F1P_PARAMETER -> id | tk_num 
+F2P_RESERVED_WORD -> ub | lb
+F2P_PARAMETER -> tk_coma tk_num | epsilon
 
 
 
@@ -75,7 +81,7 @@ VARIABLE_INSTANCE' -> tk_punto id | epsilon
 VARIABLE_DECLARATION -> var IDS_GROUP
 VARIABLE -> id
 
-VAR_TYPE -> int | cap | double | char
+VAR_TYPE -> int | cap | double | char | real
 IDS_GROUP -> id IDS_GROUP'
 IDS_GROUP' -> tk_coma IDS_GROUP' | epsilon
 
@@ -88,8 +94,8 @@ IDS_GROUP' -> tk_coma IDS_GROUP' | epsilon
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|body|const|create|receive|destroy|external|extend|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
-        softRegex: /^(global|body|const|create|receive|destroy|external|extend|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)/,
+        hardRegex: /^(global|double|body|const|create|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)$/,
+        softRegex: /^(global|double|body|const|create|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)/,
         print: "onlyWord"
     }
     ,
@@ -719,7 +725,7 @@ function deepFindToken(word, row, column) {
                 min_index_token = matched_word.index;
                 token_to_match = token;
             }else if(matched_word.index == min_index_token){ //Solve problem with global1(
-                if(token_to_match.softRegex.exec(word)[0] != matched_word[0])
+                if(token_to_match.softRegex.exec(word)[0].length < matched_word[0].length)
                     token_to_match = token;
             }
         }
