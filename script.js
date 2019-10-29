@@ -6,13 +6,13 @@ var inputGrammar =
 
 //
 // `
-`SR_PROGRAM ->  RESOURCE_BODY
+`SR_PROGRAM ->  RESOURCES_BODY
 
 
-RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY |   epsilon
+RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
 
-RESOURCE_BODY -> resource id RESOURCE_BODY'
-RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART end | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART end
+RESOURCE_BODY -> resource id RESOURCE_BODY' end
+RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART  | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
 INTERFACE_PART -> CONSTANT_DECLARATION | IMPORT_SPECIFICATION |  OPERATION_DECLARATION  | TYPE_DECLARATION | EXTEND_DECLARATION | VARIABLE_DECLARATION | SEQUENTIAL_STATEMENT
 
@@ -440,7 +440,7 @@ function getPrimeros(rule){
 function generateSiguientes(){
   for(let key of Object.keys(grammar)){
         siguientes[key] = []
-        if(Object.keys(grammar)[0] == key) siguientes[key].push('$') //If it is the first rule, add the symbol $
+        if(Object.keys(grammar)[0] == key) siguientes[key].push('EOF') //If it is the first rule, add the symbol $
 
         generateSiguientesEachRule(key);
   }
@@ -584,8 +584,11 @@ function mainSyntactical(){
     var result = genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
     if(token.name != 'EOF' && !error_printed)
         alternativePintSyntacticalError(token.lexeme, 'EOF', 'onlyToken')
-    else if (result != "stop")
-      console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
+    else if (result != "stop"){
+        $('#result').append("<p class='successMessage'>El analisis sintactico ha finalizado exitosamente</p>")
+        console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
+    }
+      
 }
 
 ////// PUEDE INTENTAR ARREGLAR LA FUNCIÓN ALTERNATIVA, QUE FUNCIONA CON SOLO UNA LINEA Y NO USA EOFlastSeenLeftSide, NI NIGUNO DE ESOS, QUE PARA MANTENIBILIDAD DEL CODIGO ES MEJOR
@@ -615,6 +618,7 @@ function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
         tokenExpected.push(rule.prediction[0])
       }
     }
+    $('#result').append("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
     console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected);
 }
 
@@ -745,7 +749,6 @@ function lexicalAnalyzer() {
             }
         }
     }
-    console.log(lexical_analysis)
     $('#result').html(lexical_analysis.replace(/&/g, '&amp;')
                                     .replace(/>/g, '&gt;')
                                     .replace(/</g, '&lt;')
