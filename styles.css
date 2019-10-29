@@ -80,3 +80,11 @@ p{
     font-size: 18px;
     margin-left: auto;
 }
+
+.errorMessage{
+    color: #ff8e8e;
+}
+
+.successMessage{
+    color: lightgreen;
+}

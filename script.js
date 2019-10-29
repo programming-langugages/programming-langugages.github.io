@@ -6,16 +6,17 @@ var inputGrammar =
 
 //
 // `
-`SR_PROGRAM ->  RESOURCE_BODY
+`SR_PROGRAM ->  RESOURCE_BODY RESOURCES_BODY
 
 
 RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
 
-RESOURCE_BODY -> resource id RESOURCE_BODY'
-RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART end | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART end
+RESOURCE_BODY -> resource id RESOURCE_BODY' end
+RESOURCE_BODY' -> INTERFACE_PART INTERFACES_PART  | tk_par_izq tk_par_der INTERFACE_PART INTERFACES_PART
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
 INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION
-INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION |  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT
+INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION
+INTERFACE_PART ->  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT | PRIMITIVE_FUNCTION | BODY_DECLARATION
 
 
 
@@ -44,11 +45,17 @@ TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE  |  id tk_dos_puntos id VAR_T
 
 EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
 
+BODY_DECLARATION -> body id
 
-
-
-
-
+PRIMITIVE_FUNCTION -> FUNCTION_ONE_PARAMETER | FUNCTION_TWO_PARAMETER
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE1 tk_par_izq F1P_PARAMETER tk_par_der | F1P_RESERVED_WORD_TYPE2 tk_par_izq VAR_TYPE tk_par_der |  F1P_RESERVED_WORD_TYPE3 tk_par_izq id tk_par_der
+FUNCTION_TWO_PARAMETER -> F2P_RESERVED_WORD tk_par_izq id F2P_PARAMETER tk_par_der
+F1P_RESERVED_WORD_TYPE1 -> abs | pred | succ
+F1P_RESERVED_WORD_TYPE2 -> low | high | new
+F1P_RESERVED_WORD_TYPE3 -> length | maxlength
+F1P_PARAMETER -> id | tk_num
+F2P_RESERVED_WORD -> ub | lb
+F2P_PARAMETER -> tk_coma tk_num | epsilon
 
 
 
@@ -108,7 +115,7 @@ VARIABLE_DECLARATION'' -> epsilon
 
 
 
-VAR_TYPE -> int | cap | double | char
+VAR_TYPE -> int | cap | double | char | real
 
 IDS_TYPE_GROUP -> id tk_dos_puntos VAR_TYPE IDS_TYPE_GROUP'
 IDS_TYPE_GROUP' -> tk_coma IDS_TYPE_GROUP | epsilon
@@ -129,8 +136,8 @@ IDS_GROUP_0' -> tk_coma IDS_GROUP_0 | epsilon
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|body|const|create|receive|destroy|external|extend|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)$/,
-        softRegex: /^(global|body|const|create|receive|destroy|external|extend|getarg|get|global|import|int|mod|new|procedure|process|final|char|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|stop|writes|write|cap|ref|end|res|val|var|ni|co|to|af|op|or|fa|fi|if)/,
+        hardRegex: /^(global|double|body|const|create|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)$/,
+        softRegex: /^(global|double|body|const|create|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)/,
         print: "onlyWord"
     }
     ,
@@ -363,7 +370,7 @@ var partial_lexical_analysis;
 var currentTokenPosition = 0;
 var wordsToAnalyse = []
 var testWTA = []
-
+var matchedTheFirstTime;
 //  -------------------------------------------------------------------------- SYNTACTICAL ANALYZER --------------------------------------------------------------------------
 
 
@@ -481,7 +488,7 @@ function getPrimeros(rule){
 function generateSiguientes(){
   for(let key of Object.keys(grammar)){
         siguientes[key] = []
-        if(Object.keys(grammar)[0] == key) siguientes[key].push('$') //If it is the first rule, add the symbol $
+        if(Object.keys(grammar)[0] == key) siguientes[key].push('EOF') //If it is the first rule, add the symbol $
 
         generateSiguientesEachRule(key);
   }
@@ -500,12 +507,10 @@ function generateSiguientesEachRule(ruleToGenerate){
 
 function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
     var tokens = rightSide.split(/\s/g);
-    // console.log("Right side: " + rightSide.toString() + " ruleToGenerate " + ruleToGenerate.toString());
     if(!isTerminal(leftSide)){
       for(let token of tokens){
         if(token == ruleToGenerate){
           var indexNextToken = tokens.indexOf(token) + 1;
-          // console.log(tokens[indexNextToken]);
           if(tokens[indexNextToken]){
 
             if(!isTerminal(tokens[indexNextToken])){
@@ -515,19 +520,13 @@ function generateSiguientesOfNoTerminal(leftSide, rightSide, ruleToGenerate){
                 aux.splice(epsilon_index, 1) //Removing epsilon of the copy
               }
               siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(aux);
-              // console.log(primeros[tokens[indexNextToken]]);
               if(primeros[tokens[indexNextToken]].includes('epsilon')){
-                  // console.log("1 Adding this to " + ruleToGenerate.toString());
-                  // console.log(siguientes[leftSide]);
                   siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(siguientes[leftSide]);
               }
             } else {
-              // console.log("2 Adding this " + tokens[indexNextToken].toString() + " to " + ruleToGenerate.toString());
               if(tokens[indexNextToken] != 'epsilon') siguientes[ruleToGenerate].push(tokens[indexNextToken]);
             }
           } else {
-            // console.log("3 Adding siguientes of left Side:  "  + leftSide + " to " + ruleToGenerate.toString() );
-            // console.log(siguientes[leftSide]);
             if(siguientes[leftSide]) siguientes[ruleToGenerate] = siguientes[ruleToGenerate].concat(siguientes[leftSide])
           }
         }
@@ -573,6 +572,7 @@ function genericAnalyze(noTerminal, lastLeftSide, lastRightSide, lastSeenPositio
         let rule = rules[j]
         if(rule.prediction.includes(token.name)){ //If that token exists in prediccion
             matched = true;
+            matchedTheFirstTime = true;
             let rightSideSplitted = rule.rightSide.split(/\s/g);
             rightSideSplitted = rightSideSplitted.filter((item,index)=>item!='') //removing empty elements
             for(let i=0; i<rightSideSplitted.length;i++){
@@ -626,8 +626,11 @@ function mainSyntactical(){
     var result = genericAnalyze(Object.keys(grammar)[0]) //Initial symbol
     if(token.name != 'EOF' && !error_printed)
         alternativePintSyntacticalError(token.lexeme, 'EOF', 'onlyToken')
-    else if (result != "stop")
-      console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
+    else if (result != "stop"){
+        $('#result').append("<p class='successMessage'>El analisis sintactico ha finalizado exitosamente</p>")
+        console.log("%c El analisis sintactico ha finalizado exitosamente.", "color: green");
+    }
+
 }
 
 ////// PUEDE INTENTAR ARREGLAR LA FUNCIÓN ALTERNATIVA, QUE FUNCIONA CON SOLO UNA LINEA Y NO USA EOFlastSeenLeftSide, NI NIGUNO DE ESOS, QUE PARA MANTENIBILIDAD DEL CODIGO ES MEJOR
@@ -650,106 +653,44 @@ function mainSyntactical(){
     está saliendo se esperaba ")"
 */
 function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
+    if(!matchedTheFirstTime){
+        console.log("Falta funcion_principal")
+        $('#result').append("<p class='errorMessage'>Falta funcion_principal</p>")
+        return ;
+    }
     if(modePrint == "printAllPrediction"){
       var rules = prediccion.filter((item,index)=>item["leftSide"]==tokenExpected) //Get all rules of that no terminal
       tokenExpected =  []
       for(rule of rules){
-        tokenExpected.push(rule.prediction[0])
+        tokenExpected.push(getTokenLexemeByWord(rule.prediction[0]))
       }
-    }
+    }else
+        tokenExpected = getTokenLexemeByWord(tokenExpected)
+    $('#result').append("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
     console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected);
 }
 
 
-//Function to print a syntacticalError
-/*
-    Imprime varias veces el error, toca poner una flag pero no sé si es lo indicado
+  // Function to populate dictionary to input to the function getNextToken
+// This function gets the lexeme of a token and transform the lexical_analysis into an usable dictionary
 
-    1) Falla en el caso cuando se espera más de un token:
 
-    por ejemplo "( id "
-    Debe salir: se esperaba ")", ","
-    está saliendo: se esperaba "id", ","
-
-    por ejemplo "(id id)"
-    Debe salir: se esperaba ",", ")"
-    está saliendo se esperaba ""
-
-    2) Falla en el caso cuando el input está vacio:
-
-    por ejemplo ""
-    Debe salir: se esperaba "(" -> ya que es la única manera en la que puede empezar la gramatica
-    está saliendo: se esperaba "(", "id", ")" -> efectivamente se espera la cadena un "(", luego un id, y luego un ")"
-        Sin embargo el taller no nos pide imprimir todos los tokens que se esperen inmediatamente, en este caso solo se espera "(""
-
-    3) Falla en el caso cuando se espera SOLO  un token:
-
-    por ejemplo "( id ,"
-    Debe salir: se esperaba "id"
-    está saliendo: se esperaba ",", "id", ","
-*/
-function printSyntacticalError(token, lastLeftSide, lastRightSide, lastSeenPosition){
-  if(!lastRightSide){
-    lastRightSide = grammar[Object.keys(grammar)[0]];
-    lastSeenPosition = 0;
-  }
-  if(!lastLeftSide){
-    lastLeftSide = Object.keys(grammar)[0];
-  }
-  if(!token.name) var tokenFound = "fin de archivo";
-  else var tokenFound = token.lexeme.toString();
-  if(!error_printed)
-      error_printed = true
-      console.error("<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + addMissingFromExpectedFromRule(lastLeftSide, lastRightSide, lastSeenPosition));
-
-}
-
-//Function to add text to output accordingly to expected syntax
-function addMissingFromExpectedFromRule(leftSideRule, rightSideRule, expectedFromPosition){
-  console.log(leftSideRule, rightSideRule, expectedFromPosition)
-  var expected = "";
-
-  //Build from the part of the expected rule all the tokens that were missing
-  for(let i = expectedFromPosition ; i < rightSideRule.length; i++){
-    var currentAlpha = rightSideRule[i];
-    var derivationsOfAlpha = currentAlpha.split(/\s/g);
-    if(derivationsOfAlpha.length > 1)
-      expected += addMissingFromExpectedFromRule(leftSideRule, derivationsOfAlpha, 0);
-    //If is not terminal it must be added all the no terminals from primeros set
-    else {
-      if(!isTerminal(currentAlpha)){
-        for (let x = 0; x < prediccion[currentAlpha].length ; x++){
-          var currentPrimero = prediccion[currentAlpha][x];
-          // Check better what to do with epsilons
-          if(currentPrimero == 'epsilon') continue;
-          //expected += "\"";
-          var derivationsOfPrimero = currentPrimero.split(/\s/g);
-          if(derivationsOfPrimero.length > 1){
-            for(let j = 0; j < derivationsOfPrimero.length; j ++ ){
-              expected += "\"";
-              expected += getTokenNameAndLexemeByWord(derivationsOfPrimero[j])["lexeme"];
-              if (!j == derivationsOfPrimero.length - 1) expected += "\",";
-            }
-          } else {
-            expected += "\"";
-            expected += getTokenNameAndLexemeByWord(currentPrimero)["lexeme"];
-          }
-
-          if (i == rightSideRule.length - 1 && x == primeros[currentAlpha].length - 1) expected += "\"";
-          else expected += "\",";
-        }
-      } else {
-        expected += "\"";
-        expected += getTokenNameAndLexemeByWord(rightSideRule[i].toString())["lexeme"];
-        if (i == rightSideRule.length - 1) expected += "\"";
-        else expected += "\",";
+function getTokenLexemeByWord(word){
+    var currentLexeme;
+    for(let token of tokenList){
+      if(word.match(token.hardRegex) && token['name'] == 'reserved'){
+        currentLexeme = word;
+      } else if(token['name'] == word){
+        if(!token.lexeme) currentLexeme = word;
+        else currentLexeme = token.lexeme;
       }
     }
+    if(!currentLexeme){
+      currentLexeme = word;
+    }
+    return currentLexeme;
+
   }
-  return expected;
-}
-
-
 
 //Function to get next token
 
@@ -787,7 +728,6 @@ function lexicalAnalyzer() {
             }
         }
     }
-    console.log(lexical_analysis)
     $('#result').html(lexical_analysis.replace(/&/g, '&amp;')
                                     .replace(/>/g, '&gt;')
                                     .replace(/</g, '&lt;')
@@ -796,29 +736,6 @@ function lexicalAnalyzer() {
     return lexical_analysis;
 }
 
-// Function to populate dictionary to input to the function getNextToken
-// This function gets the lexeme of a token and transform the lexical_analysis into an usable dictionary
-
-
-function getTokenNameAndLexemeByWord(word){
-  var currentName; var currentLexeme;
-  for(let token of tokenList){
-    if(word.match(token.hardRegex) && token['name'] == 'reserved'){
-      currentName = word;
-      currentLexeme = word;
-    } else if(token['name'] == word){
-      currentName = token.name;
-      if(!token.lexeme) currentLexeme = word;
-      else currentLexeme = token.lexeme;
-    }
-  }
-  if(!currentLexeme){
-    currentLexeme = word;
-    currentName = word;
-  }
-  return {name: currentName, lexeme: currentLexeme};
-
-}
 
 //Function that finds the token that matches that WORD, but only when it is an absolute match
 function findToken(word, row){
@@ -851,7 +768,7 @@ function deepFindToken(word, row, column) {
                 min_index_token = matched_word.index;
                 token_to_match = token;
             }else if(matched_word.index == min_index_token){ //Solve problem with global1(
-                if(token_to_match.softRegex.exec(word)[0] != matched_word[0])
+                if(token_to_match.softRegex.exec(word)[0].length < matched_word[0].length)
                     token_to_match = token;
             }
         }
@@ -920,4 +837,5 @@ function clearAll(){
     prediccionDebug = [] //Beutiful console debug
     currentTokenPosition = 0;
     error_printed = false;
+    matchedTheFirstTime = false;
 }
