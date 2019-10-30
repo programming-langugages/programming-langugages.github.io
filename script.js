@@ -6,7 +6,7 @@ var inputGrammar =
 
 //
 // `
-`SR_PROGRAM ->  RESOURCE_BODY RESOURCES_BODY
+`SR_PROGRAM ->  RESOURCE_BODY RESOURCES_BODY | RESOURCES_BODY RESOURCE_BODY
 
 
 RESOURCES_BODY -> RESOURCE_BODY RESOURCES_BODY | epsilon
@@ -19,27 +19,50 @@ BLOCK -> INTERFACE_PART INTERFACES_PART | CONDITIONAL_STATEMENT
 
 
 
-
-
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
-INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION | CONDITIONAL_STATEMENT
-INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION
+
+INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION | CONDITIONAL_STATEMENT | GLOBAL_SPECIFICATION
+INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION | PROCEDURE_SPECIFICATION | RESOURCE_SPECIFICATION
 INTERFACE_PART ->  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT | PRIMITIVE_FUNCTION | BODY_DECLARATION
 
 
 
+BODY_DECLARATION -> body id BODY_DECLARATION'
+BODY_DECLARATION' -> epsilon
+BODY_DECLARATION' -> tk_par_izq tk_par_der BLOCK end
+
+BODY_BODY -> VARIABLE_DECLARATION | CONSTANT_DECLARATION
 
 
 
+GLOBAL_SPECIFICATION -> global id GLOBAL_BODY GLOBAL_BODIES end
+GLOBAL_BODIES -> CONSTANT_DECLARATION GLOBAL_BODIES | TYPE_DECLARATION GLOBAL_BODIES | epsilon |
+GLOBAL_BODY -> CONSTANT_DECLARATION  | TYPE_DECLARATION
+RESOURCE_SPECIFICATION -> spec id OPTIONAL_IMPORT RESOURCE_SPECIFICATION_BODY resource id tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der SEPARATE_OPTIONAL
+RESOURCE_SPECIFICATION_BODY -> CONSTANT_DECLARATION | OPERATION_DECLARATION | TYPE_DECLARATION | epsilon
+OPTIONAL_IMPORT -> IMPORT_SPECIFICATION | epsilon
+OPTIONAL_SEPARATE -> separate | epsilon
 
 CONSTANT_DECLARATION -> const id tk_asig ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS
 IMPORT_SPECIFICATION -> import IDS_GROUP
-OPERATION_DECLARATION ->  op id PARAMETER OPERATION_END
-TYPE_DECLARATION -> type id tk_igual rec par_izq TYPE_SPECIFICATION par_der
+OPERATION_DECLARATION ->  op id tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der OPERATION_END
+TYPE_DECLARATION -> type id tk_igual rec tk_par_izq TYPE_SPECIFICATION tk_par_der
 EXTEND_DECLARATION -> extend IDS_GROUP
 CONDITIONAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_IF
 CONDITIONAL_STATEMENT -> do BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_DO
 CONDITIONAL_STATEMENT -> fs QUANTIFIER tk_ejecuta BLOCK END_FS
+PROCEDURE_SPECIFICATION -> PROCEDURE_RESERVED_WORD id PROCEDURE_SPECIFICATION' RETURNS BLOCK end
+PROCEDURE_SPECIFICATION' -> IDS_GROUP_0 | tk_par_izq IDS_GROUP_0 tk_par_der
+
+
+RETURNS -> returns id | epsilon
+PROCEDURE_RESERVED_WORD -> proc | process
+
+OPERATION_END -> cor_izq OPERATION_TYPE cor_der | returns id tk_dos_puntos VAR_TYPE |  epsilon
+
+TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE TYPE_SPECIFICATION'
+TYPE_SPECIFICATION' ->  tk_punto_y_coma TYPE_SPECIFICATION' | epsilon
+
 END_IF -> tk_separa fi | fi
 END_DO -> tk_separa od | od
 END_DO -> tk_separa af | af
@@ -49,38 +72,52 @@ END_DO -> tk_separa af | af
 
 
 PARAMETER -> par_izq PARAMETER_SPECIFICATION par_der
-PARAMETER_SPECIFICATION -> PARAMETER_ID tk_dos_puntos VAR_TYPE | PARAMETER_ID tk_dos_puntos VAR_TYPE tk_punto_coma PARAMETER_SPECIFICATION  |  epsilon
+PARAMETER_SPECIFICATION -> PARAMETER_ID tk_dos_puntos VAR_TYPE | PARAMETER_ID tk_dos_puntos VAR_TYPE tk_punto_y_coma PARAMETER_SPECIFICATION  |  epsilon
 PARAMETER_ID -> id | ARRAY  | res ARRAY
-OPERATION_END -> cor_izq OPERATION_TYPE cor_der | returns id tk_dos_puntos VAR_TYPE |  epsilon
-TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE  |  id tk_dos_puntos id VAR_TYPE  tk_punto_coma TYPE_SPECIFICATION
+
 
 
 EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
 
 
-BODY_DECLARATION -> body id
+
+FNP_PARAMETER_TYPE_1' ->  tk_coma FNP_PARAMETER_TYPE_1 | epsilon
+FNP_PARAMETER_TYPE_1'' -> tk_punto id CALL_FUNCTION_IN_FUNCTION FNP_PARAMETER_TYPE_1'
+FNP_PARAMETER_TYPE_1'' -> CALL_FUNCTION_IN_FUNCTION FNP_PARAMETER_TYPE_1'| tk_coma FNP_PARAMETER_TYPE_1''' | epsilon
+FNP_PARAMETER_TYPE_1''' ->  PARAMETER_CALL_FUNCTION FNP_PARAMETER_TYPE_1 | FNP_PARAMETER_TYPE_1
+FNP_PARAMETER_TYPE_1 -> PRIMITIVE_FUNCTION FNP_PARAMETER_TYPE_1' | tk_cadena FNP_PARAMETER_TYPE_1' | id FNP_PARAMETER_TYPE_1'' | epsilon   # String or function or functions with identifiers n.x and parameters and parameters x.x
+
+
 
 PRIMITIVE_FUNCTION -> FUNCTION_ONE_PARAMETER | FUNCTION_TWO_PARAMETER | FUNCTION_N_PARAMETERS
-FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE1 tk_par_izq F1P_PARAMETER tk_par_der
-FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE2 tk_par_izq VAR_TYPE tk_par_der
-FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE3 tk_par_izq id tk_par_der
-FUNCTION_TWO_PARAMETER -> F2P_RESERVED_WORD tk_par_izq id F2P_PARAMETER tk_par_der
-FUNCTION_N_PARAMETERS -> FNP_RESERVED_WORD_TYPE_1 tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE1 tk_par_izq F1P_PARAMETER tk_par_der SEMICOLON_OR_NOT
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE2 tk_par_izq VAR_TYPE tk_par_der SEMICOLON_OR_NOT
+FUNCTION_ONE_PARAMETER -> F1P_RESERVED_WORD_TYPE3 tk_par_izq id tk_par_der SEMICOLON_OR_NOT
+FUNCTION_TWO_PARAMETER -> F2P_RESERVED_WORD tk_par_izq id F2P_PARAMETER tk_par_der SEMICOLON_OR_NOT
+FUNCTION_N_PARAMETERS -> FNP_RESERVED_WORD_TYPE_1 tk_par_izq FNP_PARAMETER_TYPE_1 tk_par_der SEMICOLON_OR_NOT
+FUNCTION_N_PARAMETERS -> FNP_RESERVED_WORD_TYPE_2 tk_par_izq FNP_PARAMETER_TYPE_2 tk_par_der SEMICOLON_OR_NOT
 F1P_RESERVED_WORD_TYPE1 -> abs | pred | succ # Id / numbers
 F1P_RESERVED_WORD_TYPE2 -> low | high | new # types
 F1P_RESERVED_WORD_TYPE3 -> length | maxlength # ids
 F1P_PARAMETER -> VARIABLE_INSTANCE | tk_num
 F2P_RESERVED_WORD -> ub | lb
 FNP_RESERVED_WORD_TYPE_1 -> write
+FNP_RESERVED_WORD_TYPE_2 -> put
 F2P_PARAMETER -> tk_coma tk_num | epsilon
 
+
+
+FNP_PARAMETER_TYPE_2 -> STRINGS | PARAMETER_CALL_FUNCTION
+
+STRINGS -> tk_cadena STRING
+STRING -> tk_coma STRINGS | epsilon
 
 
 EXPRESSION_VARIABLE ->  epsilon | tk_asignación ARITHMETHIC_EXPRESSION
 
 STATEMENTS -> STATEMENT STATEMENTS
 STATEMENT -> SEQUENTIAL_STATEMENT
-SEQUENTIAL_STATEMENT -> skip
+SEQUENTIAL_STATEMENT -> skip | exit | next
 SEQUENTIAL_STATEMENT -> VARIABLE_DECLARATION
 SEQUENTIAL_STATEMENT -> VARIABLE_INSTANCE
 
@@ -100,11 +137,19 @@ BOOLEAN_EXPRESSION'' -> OP_BINARIO_BOOLEAN TERM | epsilon
 VARIABLE_INSTANCE -> id VARIABLE_INSTANCE'
 VARIABLE_INSTANCE' -> tk_punto id | epsilon | tk_menos tk_menos | tk_suma tk_suma
 VARIABLE_INSTANCE' -> tk_coma IDS_GROUP
-VARIABLE_INSTANCE' -> tk_asig VARIABLE_INSTANCE'' |  CALL_FUNCTION
-VARIABLE_INSTANCE'' -> ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS | CALL_FUNCTION
+VARIABLE_INSTANCE' -> tk_asig VARIABLE_INSTANCE'' | tk_swap VARIABLE_INSTANCE'' |  CALL_FUNCTION
+VARIABLE_INSTANCE'' -> ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS SEMICOLON_OR_NOT | CALL_FUNCTION | create id CALL_FUNCTION
 
 
-ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der | TERM ARITHMETHIC_EXPRESSIONS
+VARIABLE_DECLARATION -> var id VARIABLE_DECLARATION'
+VARIABLE_DECLARATION' -> tk_dos_puntos VARIABLE_DECLARATION''' | IDS_GROUP' VARIABLE_DECLARATION''
+VARIABLE_DECLARATION''' -> VAR_TYPE IDS_TYPE_GROUP' | PARAMETER_CALL_FUNCTION
+VARIABLE_DECLARATION'' -> tk_dos_puntos VAR_TYPE
+VARIABLE_DECLARATION'' -> epsilon
+
+
+ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der SEMICOLON_OR_NOT | TERM ARITHMETHIC_EXPRESSIONS
+
 ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
 TERM -> PARAMETER_CALL_FUNCTION | tk_num
 
@@ -115,24 +160,17 @@ VARIABLE_INSTANCE2' -> tk_punto id VARIABLE_INSTANCE2 | epsilon
 OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi
 OP_BINARIO_BOOLEAN -> tk_distinto | tk_menorque | tk_mayorque  | tk_igual | tk_menorque tk_igual | tk_mayorque tk_igual
 
-CALL_FUNCTION ->  tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
-
+CALL_FUNCTION ->  tk_par_izq ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS tk_par_der SEMICOLON_OR_NOT # Aqui puede ser PARAMETER_CALL_FUNCTION
+CALL_FUNCTION_IN_FUNCTION -> tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
 
 
 PARAMETER_CALL_FUNCTION -> id PARAMETER_CALL_FUNCTION'' | epsilon
 PARAMETER_CALL_FUNCTION'' -> PARAMETER_CALL_FUNCTION' | tk_punto id PARAMETER_CALL_FUNCTION' | epsilon
 PARAMETER_CALL_FUNCTION' -> tk_coma PARAMETER_CALL_FUNCTION | epsilon
 
-VARIABLE_DECLARATION -> var id VARIABLE_DECLARATION'
-VARIABLE_DECLARATION' -> tk_dos_puntos VAR_TYPE IDS_TYPE_GROUP'
-VARIABLE_DECLARATION' -> IDS_GROUP' VARIABLE_DECLARATION''
-
-VARIABLE_DECLARATION'' -> tk_dos_puntos VAR_TYPE
-VARIABLE_DECLARATION'' -> epsilon
 
 
-
-
+SEMICOLON_OR_NOT -> tk_punto_y_coma | epsilon
 VAR_TYPE -> int | cap | double | char | real
 
 IDS_TYPE_GROUP -> id tk_dos_puntos VAR_TYPE IDS_TYPE_GROUP'
@@ -154,21 +192,21 @@ IDS_GROUP_0' -> tk_coma IDS_GROUP_0 | epsilon
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)$/,
-        softRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub)/,
+        hardRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|rec|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub|put|type)$/,
+        softRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|rec|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub|put|type)/,
         print: "onlyWord"
     }
     ,
     {
         name: "id",
-        hardRegex: /^[a-zA-Z]+[a-zA-Z0-9]*$/,
-        softRegex: /^[a-zA-Z]+[a-zA-Z0-9]*/,
+        hardRegex: /^(_)?[a-zA-Z]+[a-zA-Z0-9]*$/,
+        softRegex: /^(_)?[a-zA-Z]+[a-zA-Z0-9]*/,
         print: "wordAndToken"
     },
     {
         name: "tk_cadena",
-        hardRegex: /^".*"$/,
-        softRegex: /^".*"/,
+        hardRegex: /^"([^\\"]|\\")*"$/,
+        softRegex: /^"([^\\"]|\\")*"/,
         print: "wordAndToken"
     },
     {
@@ -675,9 +713,10 @@ function mainSyntactical(){
 */
 function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
     if(!matchedTheFirstTime){
-        console.log("Falta funcion_principal")
-        $('#result').append("<p class='errorMessage'>Falta funcion_principal</p>")
-        $('#result').prepend("<p class='errorMessage'>Falta funcion_principal</p>")
+        var currentError = "Error sintáctico: falta funcion_principal"
+        console.log(currentError)
+        $('#result').append("<p class='errorMessage'>" + currentError + "</p>")
+        $('#result').prepend("<p class='errorMessage'>" + currentError + "</p>")
         return ;
     }
     if(modePrint == "printAllPrediction"){
@@ -703,6 +742,7 @@ function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
 function getTokenLexemeByWord(word){
     var currentLexeme;
     for(let token of tokenList){
+      if(!word) break;
       if(word.match(token.hardRegex) && token['name'] == 'reserved'){
         currentLexeme = word;
       } else if(token['name'] == word){
