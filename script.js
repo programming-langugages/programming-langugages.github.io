@@ -173,15 +173,17 @@ VARIABLE_DECLARATION'' -> epsilon
 
 
 
+TERM_ARITHMETHIC_EXPRESSION' -> tk_cor_izq TERM tk_cor_der | OP_BINARIO ARITHMETHIC_EXPRESSION | PARAMETER_CALL_FUNCTION_NO_ID
 
 ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der SEMICOLON_OR_NOT
 ARITHMETHIC_EXPRESSION -> TERM_ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS
 ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
 
 
-TERM_ARITHMETHIC_EXPRESSION -> id TERM_ARITHMETHIC_EXPRESSION' | tk_num
-TERM_ARITHMETHIC_EXPRESSION' -> tk_cor_izq TERM tk_cor_der | PARAMETER_CALL_FUNCTION_NO_ID
+TERM_ARITHMETHIC_EXPRESSION -> ID_POINT TERM_ARITHMETHIC_EXPRESSION' | tk_num
 
+ID_POINT -> id ID_POINT'
+ID_POINT' -> tk_punto id | epsilon
 
 TERM -> PARAMETER_CALL_FUNCTION | tk_num
 
@@ -264,8 +266,8 @@ var tokenList = [
     },
     {
         name: "tk_cadena",
-        hardRegex: /^"([^\\"]|\\")*"$/,
-        softRegex: /^"([^\\"]|\\")*"/,
+        hardRegex: /^".*"$/,
+        softRegex: /^".*"/,
         print: "wordAndToken"
     },
     {
@@ -409,11 +411,11 @@ var tokenList = [
         print: "wordAndToken"
     },
     {
-        name: "tk_menos",
+        name: "tk_menos_MENOS",
         hardRegex: /^--$/,
         softRegex: /^--/,
         print: "onlyToken",
-        lexeme: "-"
+        lexeme: "--"
     },
     {
         name: "tk_menos",
@@ -432,10 +434,10 @@ var tokenList = [
 
     {
         name: "tk_suma_suma",
-        hardRegex: /^\++$/,
-        softRegex: /^\++/,
+        hardRegex: /^\+\+$/,
+        softRegex: /^\+\+/,
         print: "onlyToken",
-        lexeme: "+"
+        lexeme: "++"
     },
     {
         name: "tk_suma",
@@ -812,9 +814,10 @@ function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
       tokenExpected =  []
       for(rule of rules){
 
-        tokenExpected.push(getTokenLexemeByWord(rule.prediction[0]))
+        tokenExpected.push('"'+getTokenLexemeByWord(rule.prediction[0])+'"')
 
       }
+      tokenExpected = tokenExpected.join(" ")
     }else
         tokenExpected = getTokenLexemeByWord(tokenExpected)
     $('#result').append("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
@@ -871,6 +874,7 @@ function lexicalAnalyzer() {
         var line = lines[i].replace(commentRegex, '');
         var words = splitWithIndex(line)
         for(let word of words){
+            word.name = word.name.trim()
             if(word.name != ""){
                 findToken(word, i+1)
                 if(partial_lexical_analysis.match(/Error lexico/)){
