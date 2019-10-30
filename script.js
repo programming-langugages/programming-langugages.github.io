@@ -23,7 +23,7 @@ INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
 
 INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION | CONDITIONAL_STATEMENT | GLOBAL_SPECIFICATION
 INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION | PROCEDURE_SPECIFICATION | RESOURCE_SPECIFICATION
-INTERFACE_PART ->  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT | PRIMITIVE_FUNCTION | BODY_DECLARATION
+INTERFACE_PART ->  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT | PRIMITIVE_FUNCTION | BODY_DECLARATION | FINAL_DECLARATION | INITIAL_DECLARATION
 
 
 
@@ -51,8 +51,12 @@ EXTEND_DECLARATION -> extend IDS_GROUP
 CONDITIONAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_IF
 CONDITIONAL_STATEMENT -> do BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_DO
 CONDITIONAL_STATEMENT -> fs QUANTIFIER tk_ejecuta BLOCK END_FS
+CONDITIONAL_STATEMENT -> fa CYCLE tk_ejecuta BLOCK END_FA
 PROCEDURE_SPECIFICATION -> PROCEDURE_RESERVED_WORD id PROCEDURE_SPECIFICATION' RETURNS BLOCK end
 PROCEDURE_SPECIFICATION' -> IDS_GROUP_0 | tk_par_izq IDS_GROUP_0 tk_par_der
+FINAL_DECLARATION -> final BLOCK end
+INITIAL_DECLARATION -> inital BLOCK end
+CYCLE -> VARIABLE_INSTANCE2 tk_asig TERM to TERM
 
 
 RETURNS -> returns id | epsilon
@@ -65,8 +69,8 @@ TYPE_SPECIFICATION' ->  tk_punto_y_coma TYPE_SPECIFICATION' | epsilon
 
 END_IF -> tk_separa fi | fi
 END_DO -> tk_separa od | od
-END_DO -> tk_separa af | af
-
+END_FA -> tk_separa af | af
+END_FS -> tk_separa fs | fs
 
 
 
@@ -81,12 +85,10 @@ EXPRESSION -> EXPRESSION | BOOLEAN_EXPRESSION | ARITHMETHIC_EXPRESSION | epsilon
 
 
 
-FNP_PARAMETER_TYPE_1' ->  tk_coma FNP_PARAMETER_TYPE_1 | epsilon
-FNP_PARAMETER_TYPE_1'' -> tk_punto id CALL_FUNCTION_IN_FUNCTION FNP_PARAMETER_TYPE_1'
-FNP_PARAMETER_TYPE_1'' -> CALL_FUNCTION_IN_FUNCTION FNP_PARAMETER_TYPE_1'| tk_coma FNP_PARAMETER_TYPE_1''' | epsilon
-FNP_PARAMETER_TYPE_1''' ->  PARAMETER_CALL_FUNCTION FNP_PARAMETER_TYPE_1 | FNP_PARAMETER_TYPE_1
-FNP_PARAMETER_TYPE_1 -> PRIMITIVE_FUNCTION FNP_PARAMETER_TYPE_1' | tk_cadena FNP_PARAMETER_TYPE_1' | id FNP_PARAMETER_TYPE_1'' | epsilon   # String or function or functions with identifiers n.x and parameters and parameters x.x
-
+FNP_PARAMETER_TYPE_1 -> PRIMITIVE_FUNCTION FNP_PARAMETER_TYPE_1' | tk_cadena FNP_PARAMETER_TYPE_1' | id FNP_PARAMETER_TYPE_1''   # String or function or functions with identifiers n.x and parameters and parameters x.x
+FNP_PARAMETER_TYPE_1'' -> tk_punto id FNP_PARAMETER_TYPE_1''' | CALL_FUNCTION_IN_FUNCTION FNP_PARAMETER_TYPE_1' | tk_coma FNP_PARAMETER_TYPE_1 | epsilon
+FNP_PARAMETER_TYPE_1''' -> CALL_FUNCTION_IN_FUNCTION FNP_PARAMETER_TYPE_1' | FNP_PARAMETER_TYPE_1'
+FNP_PARAMETER_TYPE_1' -> epsilon  | tk_coma FNP_PARAMETER_TYPE_1
 
 
 PRIMITIVE_FUNCTION -> FUNCTION_ONE_PARAMETER | FUNCTION_TWO_PARAMETER | FUNCTION_N_PARAMETERS
@@ -135,37 +137,64 @@ BOOLEAN_EXPRESSION' -> OP_BINARIO_BOOLEAN TERM tk_par_der | tk_par_der
 BOOLEAN_EXPRESSION'' -> OP_BINARIO_BOOLEAN TERM | epsilon
 
 VARIABLE_INSTANCE -> id VARIABLE_INSTANCE'
-VARIABLE_INSTANCE' -> tk_punto id | epsilon | tk_menos tk_menos | tk_suma tk_suma
-VARIABLE_INSTANCE' -> tk_coma IDS_GROUP
+VARIABLE_INSTANCE' -> tk_punto id | tk_menos_menos | tk_suma_suma | epsilon
+VARIABLE_INSTANCE' -> tk_coma IDS_GROUP | OP_BINARIO VARIABLE_INSTANCE'' |  ARRAY_DECLARATIONS tk_asig VARIABLE_INSTANCE''
 VARIABLE_INSTANCE' -> tk_asig VARIABLE_INSTANCE'' | tk_swap VARIABLE_INSTANCE'' |  CALL_FUNCTION
 VARIABLE_INSTANCE'' -> ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS SEMICOLON_OR_NOT | CALL_FUNCTION | create id CALL_FUNCTION
 
 
 VARIABLE_DECLARATION -> var id VARIABLE_DECLARATION'
-VARIABLE_DECLARATION' -> tk_dos_puntos VARIABLE_DECLARATION''' | IDS_GROUP' VARIABLE_DECLARATION''
+VARIABLE_DECLARATION' -> tk_dos_puntos VARIABLE_DECLARATION''' | IDS_GROUP' VARIABLE_DECLARATION'' | tk_cor_izq TERM tk_cor_der ARRAY_DECLARATION tk_dos_puntos VAR_TYPE | tk_asig ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS SEMICOLON_OR_NOT #VARIABLE_DECLARATION''''
+
+VARIABLE_DECLARATION'''' -> ARRAY_DECLARATION tk_dos_puntos VAR_TYPE | tk_dos_puntos VAR_TYPE ARRAY_DECLARATION
+
 VARIABLE_DECLARATION''' -> VAR_TYPE IDS_TYPE_GROUP' | PARAMETER_CALL_FUNCTION
 VARIABLE_DECLARATION'' -> tk_dos_puntos VAR_TYPE
 VARIABLE_DECLARATION'' -> epsilon
 
 
-ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der SEMICOLON_OR_NOT | TERM ARITHMETHIC_EXPRESSIONS
 
+
+
+
+ARITHMETHIC_EXPRESSION ->  tk_par_izq TERM ARITHMETHIC_EXPRESSIONS tk_par_der SEMICOLON_OR_NOT
+ARITHMETHIC_EXPRESSION -> TERM_ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS
 ARITHMETHIC_EXPRESSIONS ->  OP_BINARIO ARITHMETHIC_EXPRESSION | epsilon
+
+
+TERM_ARITHMETHIC_EXPRESSION -> id TERM_ARITHMETHIC_EXPRESSION' | tk_num
+TERM_ARITHMETHIC_EXPRESSION' -> tk_cor_izq TERM tk_cor_der | PARAMETER_CALL_FUNCTION_NO_ID
+
+
 TERM -> PARAMETER_CALL_FUNCTION | tk_num
 
+
+
+ARRAY_DECLARATIONS -> ARRAY_BASIC ARRAY_DECLARATION
+ARRAY_DECLARATION -> tk_coma ARRAY_DECLARATIONS' | epsilon
+
+
+ARRAY_BASIC -> tk_cor_izq TERM tk_cor_der
+
+
+ARRAY_DECLARATIONS' -> ARRAY_BASIC' ARRAY_DECLARATION'
+ARRAY_DECLARATION' -> tk_coma ARRAY_DECLARATIONS' | epsilon
+ARRAY_BASIC' -> id tk_cor_izq TERM tk_cor_der | epsilon
 
 VARIABLE_INSTANCE2 -> id VARIABLE_INSTANCE2'
 VARIABLE_INSTANCE2' -> tk_punto id VARIABLE_INSTANCE2 | epsilon
 
-OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi
+OP_BINARIO -> tk_suma | tk_div | tk_menos | tk_multi | tk_suma_asig | tk_menos_asig
 OP_BINARIO_BOOLEAN -> tk_distinto | tk_menorque | tk_mayorque  | tk_igual | tk_menorque tk_igual | tk_mayorque tk_igual
 
 CALL_FUNCTION ->  tk_par_izq ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS tk_par_der SEMICOLON_OR_NOT # Aqui puede ser PARAMETER_CALL_FUNCTION
 CALL_FUNCTION_IN_FUNCTION -> tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der
 
+PARAMETER_CALL_FUNCTION_NO_ID -> PARAMETER_CALL_FUNCTION' | epsilon
 
-PARAMETER_CALL_FUNCTION -> id PARAMETER_CALL_FUNCTION'' | epsilon
+
 PARAMETER_CALL_FUNCTION'' -> PARAMETER_CALL_FUNCTION' | tk_punto id PARAMETER_CALL_FUNCTION' | epsilon
+PARAMETER_CALL_FUNCTION -> id PARAMETER_CALL_FUNCTION'' | epsilon # param param.param
 PARAMETER_CALL_FUNCTION' -> tk_coma PARAMETER_CALL_FUNCTION | epsilon
 
 
@@ -198,16 +227,30 @@ var tokenList = [
     }
     ,
     {
-        name: "id",
-        hardRegex: /^(_)?[a-zA-Z]+[a-zA-Z0-9]*$/,
-        softRegex: /^(_)?[a-zA-Z]+[a-zA-Z0-9]*/,
-        print: "wordAndToken"
+      name: "id",
+      hardRegex: /^(_)?[a-zA-Z]+[a-zA-Z0-9_]*$/,
+      softRegex: /^(_)?[a-zA-Z]+[a-zA-Z0-9_]*/,
+      print: "wordAndToken"
     },
     {
         name: "tk_cadena",
         hardRegex: /^"([^\\"]|\\")*"$/,
         softRegex: /^"([^\\"]|\\")*"/,
         print: "wordAndToken"
+    },
+    {
+        name: "tk_suma_asig",
+        hardRegex: /^\+:=$/,
+        softRegex: /^\+:=/,
+        print: "onlyToken",
+        lexeme: "+"
+    },
+    {
+        name: "tk_menos_asig",
+        hardRegex: /^\-:=$/,
+        softRegex: /^\-:=/,
+        print: "onlyToken",
+        lexeme: "+"
     },
     {
         name: "tk_asig",
@@ -337,6 +380,13 @@ var tokenList = [
     },
     {
         name: "tk_menos",
+        hardRegex: /^--$/,
+        softRegex: /^--/,
+        print: "onlyToken",
+        lexeme: "-"
+    },
+    {
+        name: "tk_menos",
         hardRegex: /^-$/,
         softRegex: /^-/,
         print: "onlyToken",
@@ -348,6 +398,14 @@ var tokenList = [
         softRegex: /^\[\]/,
         print: "onlyToken",
         lexeme: "[]"
+    },
+
+    {
+        name: "tk_suma_suma",
+        hardRegex: /^\++$/,
+        softRegex: /^\++/,
+        print: "onlyToken",
+        lexeme: "+"
     },
     {
         name: "tk_suma",
