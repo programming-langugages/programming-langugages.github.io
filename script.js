@@ -234,8 +234,8 @@ var tokenList = [
     },
     {
         name: "tk_cadena",
-        hardRegex: /^"([^\\"]|\\")*"$/,
-        softRegex: /^"([^\\"]|\\")*"/,
+        hardRegex: /^".*"$/,
+        softRegex: /^".*"/,
         print: "wordAndToken"
     },
     {
@@ -782,9 +782,10 @@ function alternativePintSyntacticalError(tokenFound, tokenExpected, modePrint){
       tokenExpected =  []
       for(rule of rules){
 
-        tokenExpected.push(getTokenLexemeByWord(rule.prediction[0]))
+        tokenExpected.push('"'+getTokenLexemeByWord(rule.prediction[0])+'"')
 
       }
+      tokenExpected = tokenExpected.join(" ")
     }else
         tokenExpected = getTokenLexemeByWord(tokenExpected)
     $('#result').append("<p class='errorMessage'>" + "<" + syntacticRow + "," + syntacticColumn + "> Error sintactico: se encontró \"" + tokenFound + "\"; se esperaba: " + tokenExpected  + "</p>")
@@ -841,6 +842,7 @@ function lexicalAnalyzer() {
         var line = lines[i].replace(commentRegex, '');
         var words = splitWithIndex(line)
         for(let word of words){
+            word.name = word.name.trim()
             if(word.name != ""){
                 findToken(word, i+1)
                 if(partial_lexical_analysis.match(/Error lexico/)){
