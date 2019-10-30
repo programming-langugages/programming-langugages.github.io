@@ -21,7 +21,7 @@ BLOCK -> INTERFACE_PART INTERFACES_PART | CONDITIONAL_STATEMENT
 
 INTERFACES_PART -> INTERFACE_PART INTERFACES_PART | epsilon
 
-INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION | CONDITIONAL_STATEMENT | GLOBAL_SPECIFICATION
+INTERFACE_PART ->  CONSTANT_DECLARATION | IMPORT_SPECIFICATION | CONDITIONAL_STATEMENT | GLOBAL_SPECIFICATION | OPERATION_TYPE_DECLARATION
 INTERFACE_PART -> EXTEND_DECLARATION | OPERATION_DECLARATION  | TYPE_DECLARATION | PROCEDURE_SPECIFICATION | RESOURCE_SPECIFICATION
 INTERFACE_PART ->  VARIABLE_DECLARATION |  SEQUENTIAL_STATEMENT | PRIMITIVE_FUNCTION | BODY_DECLARATION | FINAL_DECLARATION | INITIAL_DECLARATION
 
@@ -45,7 +45,10 @@ OPTIONAL_SEPARATE -> separate | epsilon
 
 CONSTANT_DECLARATION -> const id tk_asig ARITHMETHIC_EXPRESSION ARITHMETHIC_EXPRESSIONS
 IMPORT_SPECIFICATION -> import IDS_GROUP
-OPERATION_DECLARATION ->  op id tk_par_izq PARAMETER_CALL_FUNCTION tk_par_der OPERATION_END
+OPERATION_DECLARATION ->  op id OPERATION_DECLARATION'
+OPERATION_DECLARATION' -> tk_par_izq TYPE_SPECIFICATION_OP tk_par_der OPERATION_END | TYPE_SPECIFICATION_OP_2  OPERATION_END
+
+OPERATION_TYPE_DECLARATION ->  optype id tk_igual tk_par_izq TYPE_SPECIFICATION_OP_TYPE tk_par_der returns id tk_dos_puntos VAR_TYPE
 TYPE_DECLARATION -> type id tk_igual rec tk_par_izq TYPE_SPECIFICATION tk_par_der
 EXTEND_DECLARATION -> extend IDS_GROUP
 CONDITIONAL_STATEMENT -> if BOOLEAN_EXPRESSION tk_ejecuta BLOCK END_IF
@@ -62,10 +65,24 @@ CYCLE -> VARIABLE_INSTANCE2 tk_asig TERM to TERM
 RETURNS -> returns id | epsilon
 PROCEDURE_RESERVED_WORD -> proc | process
 
-OPERATION_END -> cor_izq OPERATION_TYPE cor_der | returns id tk_dos_puntos VAR_TYPE |  epsilon
+OPERATION_END -> cor_izq OPERATION_TYPE cor_der | returns id tk_dos_puntos OPERATION_END' |  epsilon
+OPERATION_END' ->  VAR_TYPE | id
+TYPE_SPECIFICATION -> IDS_GROUP tk_dos_puntos VAR_TYPE TYPE_SPECIFICATION'
+TYPE_SPECIFICATION' ->  tk_punto_y_coma TYPE_SPECIFICATION | epsilon
 
-TYPE_SPECIFICATION -> id tk_dos_puntos id VAR_TYPE TYPE_SPECIFICATION'
-TYPE_SPECIFICATION' ->  tk_punto_y_coma TYPE_SPECIFICATION' | epsilon
+
+TYPE_SPECIFICATION_OP_TYPE -> IDS_GROUP_DOS_PUNTOS_OP_TYPE
+
+
+TYPE_SPECIFICATION_OP -> id TYPE_SPECIFICATION_OP' | epsilon
+TYPE_SPECIFICATION_OP' ->  tk_dos_puntos IDS_GROUP_DOS_PUNTOS TYPE_SPECIFICATION_OP | tk_coma TYPE_SPECIFICATION_OP |  epsilon
+
+
+
+TYPE_SPECIFICATION_OP_2 -> IDS_GROUP_DOS_PUNTOS TYPE_SPECIFICATION_OP_2' | epsilon
+TYPE_SPECIFICATION_OP_2' ->  tk_coma TYPE_SPECIFICATION_OP_2 |  tk_dos_puntos TYPE_SPECIFICATION_OP_2 | epsilon
+
+
 
 END_IF -> tk_separa fi | fi
 END_DO -> tk_separa od | od
@@ -200,13 +217,26 @@ PARAMETER_CALL_FUNCTION' -> tk_coma PARAMETER_CALL_FUNCTION | epsilon
 
 
 SEMICOLON_OR_NOT -> tk_punto_y_coma | epsilon
-VAR_TYPE -> int | cap | double | char | real
+
 
 IDS_TYPE_GROUP -> id tk_dos_puntos VAR_TYPE IDS_TYPE_GROUP'
 IDS_TYPE_GROUP' -> tk_coma IDS_TYPE_GROUP | epsilon
 
 IDS_GROUP -> id IDS_GROUP'
 IDS_GROUP' -> tk_coma IDS_GROUP | epsilon
+
+IDS_GROUP_DOS_PUNTOS -> id IDS_GROUP_DOS_PUNTOS' | VAR_TYPE IDS_GROUP_DOS_PUNTOS''  | epsilon
+IDS_GROUP_DOS_PUNTOS'' -> IDS_GROUP_DOS_PUNTOS' | tk_par_izq IDS_GROUP_DOS_PUNTOS tk_par_der IDS_GROUP_DOS_PUNTOS' | epsilon
+IDS_GROUP_DOS_PUNTOS' ->  tk_coma IDS_GROUP_DOS_PUNTOS | tk_dos_puntos IDS_GROUP_DOS_PUNTOS |  tk_punto_y_coma IDS_GROUP_DOS_PUNTOS  |  epsilon
+
+
+
+IDS_GROUP_DOS_PUNTOS_OP_TYPE -> id IDS_GROUP_DOS_PUNTOS_OP_TYPE' | VAR_TYPE IDS_GROUP_DOS_PUNTOS_OP_TYPE' | epsilon
+IDS_GROUP_DOS_PUNTOS_OP_TYPE' -> tk_dos_puntos IDS_GROUP_DOS_PUNTOS_OP_TYPE |  tk_punto_y_coma IDS_GROUP_DOS_PUNTOS_OP_TYPE  |  tk_punto_y_coma IDS_GROUP_DOS_PUNTOS_OP_TYPE | epsilon
+
+
+
+VAR_TYPE -> int | cap | double | char | real
 
 IDS_GROUP_0 -> id IDS_GROUP_0' | epsilon
 IDS_GROUP_0' -> tk_coma IDS_GROUP_0 | epsilon
@@ -221,8 +251,8 @@ IDS_GROUP_0' -> tk_coma IDS_GROUP_0 | epsilon
 var tokenList = [
     {
         name: "reserved",
-        hardRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|rec|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub|put|type)$/,
-        softRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|rec|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|op|or|fa|fi|if|lb|ub|put|type)/,
+        hardRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|rec|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|optype|op|or|fa|fi|if|lb|ub|put|type)$/,
+        softRegex: /^(global|double|body|const|create|do|od|fs|af|maxlength|length|receive|rec|destroy|external|extend|getarg|get|global|import|mod|new|real|procedure|process|final|reply|next|proc|read|real|send|char|string|bool|resource|returns|scanf|sem|sprintf|int|stop|high|writes|write|pred|cap|low|ref|end|abs|res|val|var|ni|co|to|af|optype|op|or|fa|fi|if|lb|ub|put|type)/,
         print: "onlyWord"
     }
     ,
